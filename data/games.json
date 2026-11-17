@@ -1,6 +1,77 @@
 {
   "version": 1,
-  "profile": { "name": "Player" },
-  "settings": { "theme": "auto", "hoursPerWeek": 7 },
-  "games": []
+  "profile": {
+    "name": "bearenbey"
+  },
+  "settings": {
+    "theme": "auto",
+    "hoursPerWeek": 7,
+    "autoCovers": true
+  },
+  "games": [
+    {
+      "id": "mwl61triftaho",
+      "title": "Shin Megami Tensei V: Vengeance",
+      "status": "playing",
+      "score": null,
+      "hoursPlayed": 0,
+      "hltb": {
+        "main": null,
+        "extra": null,
+        "complete": null
+      },
+      "startDate": "2026-11-16",
+      "finishDate": "",
+      "addedDate": "2026-11-17",
+      "cover": "https://upload.wikimedia.org/wikipedia/en/b/bd/Shin_Megami_Tensei_V.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+      "coverTried": true,
+      "review": "",
+      "favorite": false,
+      "priority": "medium",
+      "updated": 1794948597486
+    },
+    {
+      "id": "mwl62xslbkat0",
+      "title": "Tokyo Mirage Sessions",
+      "status": "playing",
+      "score": null,
+      "hoursPlayed": 0,
+      "hltb": {
+        "main": null,
+        "extra": null,
+        "complete": null
+      },
+      "startDate": "2026-11-17",
+      "finishDate": "",
+      "addedDate": "2026-11-17",
+      "cover": "https://upload.wikimedia.org/wikipedia/en/e/e7/Genei_Ibun_Roku_cover_art.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+      "coverTried": true,
+      "review": "",
+      "favorite": false,
+      "priority": "medium",
+      "updated": 1794948649365
+    },
+    {
+      "id": "mwl63tgc3xfxd",
+      "title": "Metaphor: ReFantazio",
+      "status": "playing",
+      "score": null,
+      "hoursPlayed": 0,
+      "hltb": {
+        "main": null,
+        "extra": null,
+        "complete": null
+      },
+      "startDate": "2026-11-15",
+      "finishDate": "",
+      "addedDate": "2026-11-17",
+      "cover": "https://upload.wikimedia.org/wikipedia/en/4/4d/Metaphor_Refantazio_Cover_Art.png?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+      "coverTried": true,
+      "review": "",
+      "favorite": false,
+      "priority": "medium",
+      "updated": 1794948690397
+    }
+  ],
+  "exported": "2026-11-17T20:51:39.283Z"
 }
