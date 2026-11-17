@@ -15,7 +15,7 @@
     // Apply saved theme before paint to avoid a flash.
     try {
       const s = JSON.parse(localStorage.getItem('iswitch.v1') || '{}');
-      const t = s.settings && s.settings.theme;
+      const t = localStorage.getItem('iswitch.theme') || (s.settings && s.settings.theme);
       if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
     } catch (e) {}
   </script>
@@ -52,7 +52,7 @@
       <span class="dock-circle"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="8" height="8" rx="2"/><rect x="13" y="3" width="8" height="8" rx="2"/><rect x="3" y="13" width="8" height="8" rx="2"/><rect x="13" y="13" width="8" height="8" rx="2"/></svg></span>
       <span class="dock-label">Library</span>
     </a>
-    <button class="dock-btn dock-add" data-action="new-game" style="--c: var(--red)">
+    <button class="dock-btn dock-add owner-only" data-action="new-game" style="--c: var(--red)">
       <span class="dock-circle"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke-width="3" stroke-linecap="round" fill="none" stroke="currentColor"/></svg></span>
       <span class="dock-label">Add game</span>
     </button>
@@ -64,7 +64,7 @@
       <span class="dock-circle"><svg viewBox="0 0 24 24"><rect x="3" y="12" width="4" height="9" rx="2"/><rect x="10" y="7" width="4" height="14" rx="2"/><rect x="17" y="3" width="4" height="18" rx="2"/></svg></span>
       <span class="dock-label">Stats</span>
     </a>
-    <a href="#data" class="dock-btn" data-route="data" style="--c: #8c8c8c">
+    <a href="#data" class="dock-btn owner-only" data-route="data" style="--c: #8c8c8c">
       <span class="dock-circle"><svg viewBox="0 0 24 24"><path d="M12 8.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7zm8.6 5-1.7-.9a7 7 0 0 0 0-1.2l1.7-.9a.6.6 0 0 0 .2-.8l-1.7-3a.6.6 0 0 0-.8-.2l-1.7.9a7 7 0 0 0-1-.6V3.6a.6.6 0 0 0-.6-.6h-3.4a.6.6 0 0 0-.6.6v1.9a7 7 0 0 0-1 .6l-1.7-.9a.6.6 0 0 0-.8.2l-1.7 3a.6.6 0 0 0 .2.8l1.7.9a7 7 0 0 0 0 1.2l-1.7.9a.6.6 0 0 0-.2.8l1.7 3a.6.6 0 0 0 .8.2l1.7-.9a7 7 0 0 0 1 .6v1.9c0 .3.3.6.6.6h3.4c.3 0 .6-.3.6-.6v-1.9a7 7 0 0 0 1-.6l1.7.9c.3.2.6 0 .8-.2l1.7-3a.6.6 0 0 0-.2-.8z"/></svg></span>
       <span class="dock-label">Settings</span>
     </a>

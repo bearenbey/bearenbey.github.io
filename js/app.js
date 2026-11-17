@@ -5,6 +5,15 @@
 /* Constants & helpers                                                 */
 /* ------------------------------------------------------------------ */
 const STORE_KEY = 'iswitch.v1';
+const EDIT_KEY = 'iswitch.edit';   // set by opening /#edit: this browser may edit
+const THEME_KEY = 'iswitch.theme';
+
+// Visitors get a read-only view of the published data/games.json.
+// Editing is unlocked per browser by visiting /#edit (and locked again in Settings).
+// Edits only ever live in that browser until exported and pushed, so this is
+// about a clean visitor view, not security.
+let canEdit = false;
+try { canEdit = localStorage.getItem(EDIT_KEY) === '1'; } catch (e) {}
 
 const STATUSES = [
   { id: 'playing',   label: 'Playing' },
@@ -126,7 +135,9 @@ function normalizeState(obj) {
 }
 
 function save() {
-  try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
+  if (canEdit) {
+    try { localStorage.setItem(STORE_KEY, JSON.stringify(state)); } catch (e) { /* storage unavailable */ }
+  }
   updateChrome();
 }
 
@@ -139,6 +150,11 @@ async function fetchPublished() {
 }
 
 async function load() {
+  if (!canEdit) {
+    // Always show the latest published list, never a stale copy.
+    state = (await fetchPublished()) || DEFAULT_STATE();
+    return;
+  }
   let raw = null;
   try { raw = localStorage.getItem(STORE_KEY); } catch (e) {}
   if (raw) {
@@ -192,8 +208,8 @@ function emptyHTML(title, text, withDemo = false) {
     <div class="empty">
       <div class="empty-art" aria-hidden="true"><i></i><i></i></div>
       <h2>${esc(title)}</h2>
-      <p>${esc(text)}</p>
-      <div class="btn-row" style="justify-content:center">
+      <p>${esc(canEdit ? text : 'Nothing to show here yet.')}</p>
+      <div class="btn-row owner-only" style="justify-content:center">
         <button class="btn btn-primary" data-action="new-game"><span class="face"><b>A</b></span> Add a game</button>
         ${withDemo ? '<button class="btn" data-action="demo">Try demo data</button>' : ''}
       </div>
@@ -303,12 +319,12 @@ function renderHome() {
         <h1>${esc(possessive(name))} Personal Vault</h1>
         <p>${playing.length ? `${esc(name)} is playing ${playing.length} game${playing.length > 1 ? 's' : ''} right now.` : `${esc(name)} isn’t playing anything right now.`}</p>
       </div>
-      <button class="btn btn-primary" data-action="new-game"><span class="face"><b>+</b></span> Add game</button>
+      <button class="btn btn-primary owner-only" data-action="new-game"><span class="face"><b>+</b></span> Add game</button>
     </div>
 
     <div class="shelf" role="list" aria-label="Now playing and recent games">
       ${shelf.map(g => `<div role="listitem">${tileHTML(g)}</div>`).join('')}
-      <div role="listitem">
+      <div role="listitem" class="owner-only">
         <button class="tile add-tile" data-action="new-game" aria-label="Add a game">
           <div class="tile-art">${ICON.plus}</div>
           <div class="tile-meta"><div class="tile-title">Add game</div></div>
@@ -353,7 +369,7 @@ function renderLibrary() {
   return `
     <div class="page-head">
       <div><h1>Library</h1><p>${state.games.length} games logged</p></div>
-      <button class="btn btn-primary" data-action="new-game"><span class="face"><b>+</b></span> Add game</button>
+      <button class="btn btn-primary owner-only" data-action="new-game"><span class="face"><b>+</b></span> Add game</button>
     </div>
     <div class="toolbar">
       <label class="search">${ICON.search}<span class="sr-only">Search games</span>
@@ -424,7 +440,7 @@ function renderBacklog() {
   return `
     <div class="page-head">
       <div><h1>Backlog</h1><p>Your pile of shame, lovingly organised.</p></div>
-      <button class="btn btn-primary" data-action="new-game" data-status="backlog"><span class="face"><b>+</b></span> Add to backlog</button>
+      <button class="btn btn-primary owner-only" data-action="new-game" data-status="backlog"><span class="face"><b>+</b></span> Add to backlog</button>
     </div>
 
     <div class="backlog-hero">
@@ -437,19 +453,21 @@ function renderBacklog() {
       </div>
     </div>
 
-    <h2 class="section-title">Up next <small>sorted by priority — tap a priority to change it</small></h2>
+    <h2 class="section-title">Up next <small>sorted by priority${canEdit ? ' — tap a priority to change it' : ''}</small></h2>
     ${backlog.length ? `<div class="list">${backlog.map(g => rowHTML(g, g => `
-        <button class="prio prio-${g.priority}" data-action="cycle-prio" data-id="${g.id}" aria-label="Priority ${g.priority}, change">${g.priority}</button>
-        <button class="btn btn-sm" data-action="start-game" data-id="${g.id}">${ICON.play} Start</button>`)).join('')}</div>`
+        ${canEdit
+          ? `<button class="prio prio-${g.priority}" data-action="cycle-prio" data-id="${g.id}" aria-label="Priority ${g.priority}, change">${g.priority}</button>`
+          : `<span class="prio prio-${g.priority}">${g.priority} priority</span>`}
+        <button class="btn btn-sm owner-only" data-action="start-game" data-id="${g.id}">${ICON.play} Start</button>`)).join('')}</div>`
       : emptyHTML('Backlog is clear!', 'Nothing waiting. Add games you want to play later.')}
 
     ${playing.length ? `
       <h2 class="section-title">In progress <small>${fmtH(remainingPlaying)} left on main stories</small></h2>
-      <div class="list">${playing.map(g => rowHTML(g, g => `<button class="btn btn-sm" data-action="open-game" data-id="${g.id}">${ICON.pen} Update</button>`)).join('')}</div>` : ''}
+      <div class="list">${playing.map(g => rowHTML(g, g => `<button class="btn btn-sm owner-only" data-action="open-game" data-id="${g.id}">${ICON.pen} Update</button>`)).join('')}</div>` : ''}
 
     ${onhold.length ? `
       <h2 class="section-title">On hold</h2>
-      <div class="list">${onhold.map(g => rowHTML(g, g => `<button class="btn btn-sm" data-action="start-game" data-id="${g.id}">${ICON.play} Resume</button>`)).join('')}</div>` : ''}
+      <div class="list">${onhold.map(g => rowHTML(g, g => `<button class="btn btn-sm owner-only" data-action="start-game" data-id="${g.id}">${ICON.play} Resume</button>`)).join('')}</div>` : ''}
   `;
 }
 
@@ -643,6 +661,12 @@ function renderData() {
       </section>
 
       <section class="card">
+        <h2>Visitors</h2>
+        <p>Visitors see your published list read-only: no add, edit or delete buttons. Editing is unlocked on <b>this browser</b>. To unlock another browser, open <code>${esc(location.origin + location.pathname)}#edit</code> there.</p>
+        <div class="btn-row"><button class="btn" data-action="lock-edit">Lock editing (view as a visitor)</button></div>
+      </section>
+
+      <section class="card">
         <h2>Reset</h2>
         <p>Load the published list from <code>data/games.json</code>, try the demo, or wipe everything in this browser.</p>
         <div class="btn-row">
@@ -805,6 +829,45 @@ async function findCoversInDialog(autoPick = false) {
   }
 }
 
+function openGameView(id) {
+  const g = getGame(id);
+  if (!g) return;
+  const pct = progressPct(g);
+  const info = (label, value) => `<div class="info"><span>${label}</span><b>${value}</b></div>`;
+  const dlg = $('#gameDialog');
+  dlg.innerHTML = `
+    <form method="dialog">
+      <div class="sheet-head">
+        <span class="row-art">${artHTML(g)}</span>
+        <div><h2 id="dlgTitle">${esc(g.title)}</h2><p>${esc(statusLabel(g.status))}${g.favorite ? ' · ♥ Favourite' : ''}</p></div>
+        <button type="button" class="sheet-close" data-action="close-dialog" aria-label="Close">×</button>
+      </div>
+      <div class="sheet-body">
+        <div class="info-grid">
+          ${info('Score', g.score != null ? `${fmtScore(g.score)}<small>/10</small>` : 'Not rated')}
+          ${info('Time played', fmtH(g.hoursPlayed))}
+          ${g.status === 'playing' && pct ? info('Progress', `${pct}%`) : ''}
+          ${g.startDate ? info('Started', fmtDate(g.startDate)) : ''}
+          ${g.finishDate ? info('Finished', fmtDate(g.finishDate)) : ''}
+        </div>
+        ${g.score != null ? stars(g.score) : ''}
+        ${g.hltb.main || g.hltb.extra || g.hltb.complete ? `
+          <div class="field"><span class="label">How long to beat</span>
+            <div class="info-grid">
+              ${info('Main story', g.hltb.main ? fmtH(g.hltb.main) : '—')}
+              ${info('Main + extras', g.hltb.extra ? fmtH(g.hltb.extra) : '—')}
+              ${info('Completionist', g.hltb.complete ? fmtH(g.hltb.complete) : '—')}
+            </div>
+          </div>` : ''}
+        ${g.review ? `<div class="field"><span class="label">Review</span><p class="review-full">${esc(g.review)}</p></div>` : ''}
+      </div>
+      <div class="sheet-foot">
+        <div class="right"><button type="button" class="btn" data-action="close-dialog"><span class="face"><b>B</b></span> Close</button></div>
+      </div>
+    </form>`;
+  dlg.showModal();
+}
+
 function saveGameFromForm(form) {
   const title = form.elements.title.value.trim();
   if (!title) { form.elements.title.focus(); toast('Please enter a title'); return; }
@@ -852,7 +915,13 @@ function download(filename, text) {
 const actions = {
   'go': el => { location.hash = el.dataset.route; },
   'new-game': el => openGameDialog(null, el.dataset.status),
-  'open-game': el => openGameDialog(el.dataset.id),
+  'open-game': el => (canEdit ? openGameDialog(el.dataset.id) : openGameView(el.dataset.id)),
+  'lock-edit': () => {
+    if (!confirm('Lock editing on this browser?\n\nYour games stay saved here. Open #edit to unlock again.')) return;
+    try { localStorage.removeItem(EDIT_KEY); } catch (e) {}
+    location.replace('#home');
+    location.reload();
+  },
   'close-dialog': () => $('#gameDialog').close(),
   'add-hours': el => {
     const inp = $('#f-hours');
@@ -927,9 +996,12 @@ const actions = {
   },
 };
 
+const VISITOR_ACTIONS = new Set(['go', 'open-game', 'close-dialog', 'lib-filter', 'theme']);
+
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-action]');
   if (el && actions[el.dataset.action]) {
+    if (!canEdit && !VISITOR_ACTIONS.has(el.dataset.action)) return;
     e.preventDefault();
     actions[el.dataset.action](el, e);
   }
@@ -974,13 +1046,19 @@ $('#importFile').addEventListener('change', async e => {
 /* ------------------------------------------------------------------ */
 /* Theme, chrome, tooltip                                              */
 /* ------------------------------------------------------------------ */
+function currentTheme() {
+  let t = null;
+  try { t = localStorage.getItem(THEME_KEY); } catch (e) {}
+  return t || (canEdit ? state.settings.theme : 'auto');
+}
 function applyTheme() {
-  const t = state.settings.theme;
+  const t = currentTheme();
   if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
   else delete document.documentElement.dataset.theme;
 }
 function setTheme(t) {
   state.settings.theme = t;
+  try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
   applyTheme();
   save();
   if (location.hash === '#data') render();
@@ -1028,6 +1106,7 @@ const routes = { home: renderHome, library: renderLibrary, backlog: renderBacklo
 
 function currentRoute() {
   const r = location.hash.replace('#', '');
+  if (r === 'data' && !canEdit) return 'home';
   return routes[r] ? r : 'home';
 }
 
@@ -1042,14 +1121,18 @@ function render() {
   updateChrome();
 }
 
-addEventListener('hashchange', () => { render(); scrollTo({ top: 0 }); });
+addEventListener('hashchange', () => {
+  if (location.hash === '#edit') { if (!canEdit) { location.reload(); return; } location.replace('#home'); return; }
+  render(); scrollTo({ top: 0 });
+});
 
 // Keyboard shortcuts: N = new game, 1–5 = sections
 document.addEventListener('keydown', e => {
   if (e.target.closest('input, textarea, select, [contenteditable]') || e.metaKey || e.ctrlKey || e.altKey) return;
   if ($('#gameDialog').open) return;
   const map = { '1': 'home', '2': 'library', '3': 'backlog', '4': 'stats', '5': 'data' };
-  if (e.key === 'n' || e.key === '+') { e.preventDefault(); openGameDialog(); }
+  if (!canEdit) delete map['5'];
+  if ((e.key === 'n' || e.key === '+') && canEdit) { e.preventDefault(); openGameDialog(); }
   else if (map[e.key]) location.hash = map[e.key];
 });
 
@@ -1079,10 +1162,24 @@ function demoGames() {
 /* Boot                                                                */
 /* ------------------------------------------------------------------ */
 (async function boot() {
+  let unlocked = false;
+  if (location.hash === '#edit') {
+    try { localStorage.setItem(EDIT_KEY, '1'); } catch (e) {}
+    unlocked = !canEdit;
+    canEdit = true;
+    history.replaceState(null, '', `${location.pathname}${location.search}#home`);
+  }
+  document.body.classList.toggle('readonly', !canEdit);
+  if (!canEdit) {
+    const av = $('.avatar');
+    av.dataset.route = 'home';
+    av.setAttribute('aria-label', 'Home');
+  }
   await load();
   applyTheme();
   tick();
   setInterval(tick, 15000);
   render();
   autoFillCovers();
+  if (unlocked) toast('Editing unlocked on this browser');
 })();

@@ -19,6 +19,16 @@ dependencies — just HTML, CSS and JavaScript, ready for GitHub Pages.
 - Light (“Basic White”) and dark (“Basic Black”) themes
 - Keyboard: `N` add game, `1`–`5` switch sections
 
+## Visitors vs. editing
+
+Visitors get a **read-only** view: no add / edit / delete buttons and no Settings.
+Clicking a game shows its details and review. They always see the latest published
+`data/games.json`.
+
+To edit, open **`https://<you>.github.io/#edit`** once in your browser. Editing stays
+unlocked in that browser until you use **Settings → Lock editing**. This is about a clean
+visitor view, not security: changes only ever live in your browser until you export and push.
+
 ## How the data works
 
 Everything you enter is saved in your browser (`localStorage`).
