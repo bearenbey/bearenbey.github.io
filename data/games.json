@@ -14,7 +14,7 @@
       "title": "Shin Megami Tensei V: Vengeance",
       "status": "playing",
       "score": null,
-      "hoursPlayed": 0,
+      "hoursPlayed": 10,
       "hltb": {
         "main": null,
         "extra": null,
@@ -28,14 +28,14 @@
       "review": "",
       "favorite": false,
       "priority": "medium",
-      "updated": 1794948597486
+      "updated": 1794948925940
     },
     {
       "id": "mwl62xslbkat0",
       "title": "Tokyo Mirage Sessions",
       "status": "playing",
       "score": null,
-      "hoursPlayed": 0,
+      "hoursPlayed": 2,
       "hltb": {
         "main": null,
         "extra": null,
@@ -49,14 +49,14 @@
       "review": "",
       "favorite": false,
       "priority": "medium",
-      "updated": 1794948649365
+      "updated": 1794948939755
     },
     {
       "id": "mwl63tgc3xfxd",
       "title": "Metaphor: ReFantazio",
       "status": "playing",
       "score": null,
-      "hoursPlayed": 0,
+      "hoursPlayed": 8,
       "hltb": {
         "main": null,
         "extra": null,
@@ -70,8 +70,176 @@
       "review": "",
       "favorite": false,
       "priority": "medium",
-      "updated": 1794948690397
+      "updated": 1794948936617
+    },
+    {
+      "id": "mwl6eihnz6ebc",
+      "title": "Persona 3 Reload",
+      "status": "backlog",
+      "score": null,
+      "hoursPlayed": 0,
+      "hltb": {
+        "main": null,
+        "extra": null,
+        "complete": null
+      },
+      "startDate": "",
+      "finishDate": "",
+      "addedDate": "2026-11-17",
+      "cover": "https://upload.wikimedia.org/wikipedia/en/6/65/Persona_3_Reload_box_art.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+      "coverTried": true,
+      "review": "",
+      "favorite": false,
+      "priority": "high",
+      "updated": 1794949189403
+    },
+    {
+      "id": "mwl6f6fdlyosb",
+      "title": "Persona 5 Royal",
+      "status": "backlog",
+      "score": null,
+      "hoursPlayed": 0,
+      "hltb": {
+        "main": null,
+        "extra": null,
+        "complete": null
+      },
+      "startDate": "",
+      "finishDate": "",
+      "addedDate": "2026-11-17",
+      "cover": "https://upload.wikimedia.org/wikipedia/en/b/b0/Persona_5_cover_art.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+      "coverTried": true,
+      "review": "",
+      "favorite": false,
+      "priority": "high",
+      "updated": 1794949220425
+    },
+    {
+      "id": "mwl6fkdosnsul",
+      "title": "Persona 4",
+      "status": "backlog",
+      "score": null,
+      "hoursPlayed": 0,
+      "hltb": {
+        "main": null,
+        "extra": null,
+        "complete": null
+      },
+      "startDate": "",
+      "finishDate": "",
+      "addedDate": "2026-11-17",
+      "cover": "https://upload.wikimedia.org/wikipedia/en/1/10/Shin_Megami_Tensei_Persona_4.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+      "coverTried": true,
+      "review": "",
+      "favorite": false,
+      "priority": "medium",
+      "updated": 1794949238508
+    },
+    {
+      "id": "mwl6fxj6xpel1",
+      "title": "Unicorn Overlord",
+      "status": "backlog",
+      "score": null,
+      "hoursPlayed": 0,
+      "hltb": {
+        "main": null,
+        "extra": null,
+        "complete": null
+      },
+      "startDate": "",
+      "finishDate": "",
+      "addedDate": "2026-11-17",
+      "cover": "https://upload.wikimedia.org/wikipedia/en/a/a1/Unicorn_Overlord_cover.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+      "coverTried": true,
+      "review": "",
+      "favorite": false,
+      "priority": "medium",
+      "updated": 1794949255554
+    },
+    {
+      "id": "mwl6h19zi668t",
+      "title": "Inazuma Eleven Victory Road",
+      "status": "backlog",
+      "score": null,
+      "hoursPlayed": 0,
+      "hltb": {
+        "main": null,
+        "extra": null,
+        "complete": null
+      },
+      "startDate": "",
+      "finishDate": "",
+      "addedDate": "2026-11-17",
+      "cover": "https://upload.wikimedia.org/wikipedia/en/a/a5/Inazuma_Eleven_Victory_Road_Steam_artwork.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+      "coverTried": true,
+      "review": "",
+      "favorite": false,
+      "priority": "medium",
+      "updated": 1794949307063
+    },
+    {
+      "id": "mwl6huun143ir",
+      "title": "Astral Chain",
+      "status": "backlog",
+      "score": null,
+      "hoursPlayed": 0,
+      "hltb": {
+        "main": null,
+        "extra": null,
+        "complete": null
+      },
+      "startDate": "",
+      "finishDate": "",
+      "addedDate": "2026-11-17",
+      "cover": "https://upload.wikimedia.org/wikipedia/en/6/67/Astral_Chain.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+      "coverTried": true,
+      "review": "",
+      "favorite": false,
+      "priority": "medium",
+      "updated": 1794949345391
+    },
+    {
+      "id": "mwl6ijd19nawy",
+      "title": "Ni No Kuni",
+      "status": "backlog",
+      "score": null,
+      "hoursPlayed": 0,
+      "hltb": {
+        "main": null,
+        "extra": null,
+        "complete": null
+      },
+      "startDate": "",
+      "finishDate": "",
+      "addedDate": "2026-11-17",
+      "cover": "https://upload.wikimedia.org/wikipedia/en/b/b9/NiNoKuni.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+      "coverTried": true,
+      "review": "",
+      "favorite": false,
+      "priority": "medium",
+      "updated": 1794949377157
+    },
+    {
+      "id": "mwl6iyba3nnwd",
+      "title": "NEO: The World Ends with You",
+      "status": "backlog",
+      "score": null,
+      "hoursPlayed": 0,
+      "hltb": {
+        "main": null,
+        "extra": null,
+        "complete": null
+      },
+      "startDate": "",
+      "finishDate": "",
+      "addedDate": "2026-11-17",
+      "cover": "https://upload.wikimedia.org/wikipedia/en/3/38/Neotheworld.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+      "coverTried": true,
+      "review": "",
+      "favorite": false,
+      "priority": "medium",
+      "updated": 1794949396534
     }
   ],
-  "exported": "2026-11-17T20:51:39.283Z"
+  "exported": "2026-11-17T21:03:39.870Z"
 }
