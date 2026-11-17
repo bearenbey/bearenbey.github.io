@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "profile": { "name": "Player" },
+  "settings": { "theme": "auto", "hoursPerWeek": 7 },
+  "games": []
+}
