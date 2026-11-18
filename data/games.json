@@ -28,6 +28,7 @@
       "review": "",
       "favorite": false,
       "priority": "medium",
+      "sessions": [],
       "updated": 1795036484564
     },
     {
@@ -49,6 +50,7 @@
       "review": "",
       "favorite": false,
       "priority": "medium",
+      "sessions": [],
       "updated": 1794948939755
     },
     {
@@ -70,6 +72,7 @@
       "review": "",
       "favorite": false,
       "priority": "medium",
+      "sessions": [],
       "updated": 1794948936617
     },
     {
@@ -91,7 +94,8 @@
       "review": "",
       "favorite": false,
       "priority": "high",
-      "updated": 1794949189403
+      "sessions": [],
+      "updated": 1795038071098
     },
     {
       "id": "mwl6f6fdlyosb",
@@ -111,8 +115,9 @@
       "coverTried": true,
       "review": "",
       "favorite": false,
-      "priority": "high",
-      "updated": 1794949220425
+      "priority": "medium",
+      "sessions": [],
+      "updated": 1795038076473
     },
     {
       "id": "mwl6fkdosnsul",
@@ -133,7 +138,8 @@
       "review": "",
       "favorite": false,
       "priority": "medium",
-      "updated": 1794949238508
+      "sessions": [],
+      "updated": 1795038078915
     },
     {
       "id": "mwl6fxj6xpel1",
@@ -153,8 +159,9 @@
       "coverTried": true,
       "review": "",
       "favorite": false,
-      "priority": "medium",
-      "updated": 1794949255554
+      "priority": "low",
+      "sessions": [],
+      "updated": 1795038052739
     },
     {
       "id": "mwl6h19zi668t",
@@ -175,6 +182,7 @@
       "review": "",
       "favorite": false,
       "priority": "medium",
+      "sessions": [],
       "updated": 1794949307063
     },
     {
@@ -195,8 +203,9 @@
       "coverTried": true,
       "review": "",
       "favorite": false,
-      "priority": "medium",
-      "updated": 1794949345391
+      "priority": "high",
+      "sessions": [],
+      "updated": 1795038045803
     },
     {
       "id": "mwl6ijd19nawy",
@@ -217,6 +226,7 @@
       "review": "",
       "favorite": false,
       "priority": "medium",
+      "sessions": [],
       "updated": 1794949377157
     },
     {
@@ -238,6 +248,7 @@
       "review": "",
       "favorite": false,
       "priority": "medium",
+      "sessions": [],
       "updated": 1794949396534
     },
     {
@@ -258,9 +269,10 @@
       "coverTried": true,
       "review": "",
       "favorite": false,
-      "priority": "medium",
-      "updated": 1795036540358
+      "priority": "low",
+      "sessions": [],
+      "updated": 1795038035676
     }
   ],
-  "exported": "2026-11-18T21:15:56.640Z"
+  "exported": "2026-11-18T21:41:30.591Z"
 }
