@@ -326,7 +326,7 @@ function renderHome() {
   if (!games.length) {
     return `
       <div class="hello"><div><h1>${esc(possessive(name))} Personal Vault</h1><p>${esc(name)} hasn’t logged any games yet.</p></div></div>
-      <div style="margin-top:18px">${emptyHTML('No games yet', 'Add the games you are playing, finished, or plan to play. Everything is saved in this browser.', true)}</div>`;
+      <div style="margin-top:18px">${emptyHTML('No games yet', 'Add the games I’m playing, have finished, or plan to play. Everything is saved in this browser.', true)}</div>`;
   }
   const playing = byStatus('playing').sort((a, b) => lastPlayed(b).localeCompare(lastPlayed(a)) || b.updated - a.updated);
   const others = games.filter(g => g.status !== 'playing').sort((a, b) => b.updated - a.updated).slice(0, 12);
@@ -360,7 +360,7 @@ function renderHome() {
     <div class="quick-stats">
       <a class="qs" href="#stats"><span class="qs-ico" style="background:var(--red)">${ICON.clock}</span><div><b>${fmtH(totalH)}</b><span>Total play time</span></div></a>
       <a class="qs" href="#library"><span class="qs-ico" style="background:var(--s-completed)">${ICON.trophy}</span><div><b>${byStatus('completed').length}</b><span>Games completed</span></div></a>
-      <a class="qs" href="#backlog"><span class="qs-ico" style="background:var(--s-backlog)">${ICON.list}</span><div><b>${byStatus('backlog').length}</b><span>In your backlog</span></div></a>
+      <a class="qs" href="#backlog"><span class="qs-ico" style="background:var(--s-backlog)">${ICON.list}</span><div><b>${byStatus('backlog').length}</b><span>In my backlog</span></div></a>
       <a class="qs" href="#library"><span class="qs-ico" style="background:var(--s-playing)">${ICON.gamepad}</span><div><b>${games.length}</b><span>Games logged</span></div></a>
     </div>
 
@@ -423,8 +423,8 @@ const lib = { filter: 'all', q: '', sort: 'updated' }; // mirrored in the URL, s
 function renderLibrary() {
   const counts = Object.fromEntries(STATUSES.map(s => [s.id, byStatus(s.id).length]));
   if (!state.games.length) {
-    return `<div class="page-head"><div><h1>Library</h1><p>All your games in one place.</p></div></div>
-            ${emptyHTML('Your library is empty', 'Add your first game to get started.', true)}`;
+    return `<div class="page-head"><div><h1>Library</h1><p>All my games in one place.</p></div></div>
+            ${emptyHTML('My library is empty', 'Add the first game to get started.', true)}`;
   }
   return `
     <div class="page-head">
@@ -433,7 +433,7 @@ function renderLibrary() {
     </div>
     <div class="toolbar">
       <label class="search">${ICON.search}<span class="sr-only">Search games</span>
-        <input type="search" id="libSearch" placeholder="Search your games…" value="${esc(lib.q)}" autocomplete="off">
+        <input type="search" id="libSearch" placeholder="Search my games…" value="${esc(lib.q)}" autocomplete="off">
       </label>
       <label class="sr-only" for="libSort">Sort by</label>
       <select class="select" id="libSort">
@@ -499,7 +499,7 @@ function renderBacklog() {
 
   return `
     <div class="page-head">
-      <div><h1>Backlog</h1><p>Your pile of shame, lovingly organised.</p></div>
+      <div><h1>Backlog</h1><p>My pile of shame, lovingly organised.</p></div>
       <button class="btn btn-primary owner-only" data-action="new-game" data-status="backlog"><span class="face"><b>+</b></span> Add to backlog</button>
     </div>
 
@@ -519,7 +519,7 @@ function renderBacklog() {
           ? `<button class="prio prio-${g.priority}" data-action="cycle-prio" data-id="${g.id}" aria-label="Priority ${g.priority}, change">${g.priority}</button>`
           : `<span class="prio prio-${g.priority}">${g.priority} priority</span>`}
         <button class="btn btn-sm owner-only" data-action="start-game" data-id="${g.id}">${ICON.play} Start</button>`)).join('')}</div>`
-      : emptyHTML('Backlog is clear!', 'Nothing waiting. Add games you want to play later.')}
+      : emptyHTML('Backlog is clear!', 'Nothing waiting. Add games to play later.')}
 
     ${playing.length ? `
       <h2 class="section-title">In progress <small>${fmtH(remainingPlaying)} left on main stories</small></h2>
@@ -569,8 +569,8 @@ function vbarsHTML(items, fmt) {
 function renderStats() {
   const games = state.games;
   if (!games.length) {
-    return `<div class="page-head"><div><h1>Stats</h1><p>Numbers about your play time.</p></div></div>
-            ${emptyHTML('No stats yet', 'Add a few games and your stats will appear here.', true)}`;
+    return `<div class="page-head"><div><h1>Stats</h1><p>Numbers about my play time.</p></div></div>
+            ${emptyHTML('No stats yet', 'Add a few games and the stats will appear here.', true)}`;
   }
   const completed = byStatus('completed');
   const scored = games.filter(g => g.score != null);
@@ -634,7 +634,7 @@ function renderStats() {
   const paceHTML = pace.length ? `
     <div class="diverge">${pace.map(({ g, diff }) => {
       const w = Math.min(100, Math.abs(diff)) / 2;
-      const tip = `${g.title}\nYou: ${fmtH(g.hoursPlayed)} · HLTB main: ${fmtH(g.hltb.main)}\n${diff === 0 ? 'Right on par' : diff < 0 ? `${-diff}% faster` : `${diff}% longer`}`;
+      const tip = `${g.title}\nMe: ${fmtH(g.hoursPlayed)} · HLTB main: ${fmtH(g.hltb.main)}\n${diff === 0 ? 'Right on par' : diff < 0 ? `${-diff}% faster` : `${diff}% longer`}`;
       return `<div class="drow" tabindex="0" data-tip="${esc(tip)}">
         <span class="hbar-label">${esc(g.title)}</span>
         <span class="dtrack"><span class="dfill ${diff < 0 ? 'fast' : 'slow'}" style="width:${w}%"></span></span>
@@ -642,7 +642,7 @@ function renderStats() {
       </div>`;
     }).join('')}</div>
     <div class="daxis"><span></span><div><span>◀ faster</span><span>HLTB</span><span>longer ▶</span></div><span></span></div>`
-    : `<div class="no-data">Complete a game that has an HLTB main time to see your pace.</div>`;
+    : `<div class="no-data">Complete a game that has an HLTB main time to see my pace.</div>`;
 
   /* fun facts */
   const longest = top[0];
@@ -651,7 +651,7 @@ function renderStats() {
   const fact = (color, icon, title, text) => `<div class="fact"><span class="qs-ico" style="background:${color}">${icon}</span><div><b>${esc(title)}</b><span>${esc(text)}</span></div></div>`;
 
   return `
-    <div class="page-head"><div><h1>Stats</h1><p>Your play history in numbers.</p></div></div>
+    <div class="page-head"><div><h1>Stats</h1><p>My play history in numbers.</p></div></div>
 
     <div class="stat-tiles">
       <div class="stat-tile"><div class="big-num">${games.length}</div><div class="big-label">Games logged</div><div class="hint">${started.length} started</div></div>
@@ -687,9 +687,9 @@ function renderStats() {
         table: yearItems.length && tableHTML(['Year', 'Games'], yearItems.map(y => [y.label, y.value])),
       })}
       ${chartCard({
-        title: 'Your pace vs HowLongToBeat', sub: 'Completed games: your time compared with the HLTB main-story time', wide: true,
+        title: 'My pace vs HowLongToBeat', sub: 'Completed games: my time compared with the HLTB main-story time', wide: true,
         body: paceHTML,
-        table: pace.length && tableHTML(['Game', 'You', 'HLTB main', 'Diff'], pace.map(({ g, diff }) => [g.title, fmtH(g.hoursPlayed), fmtH(g.hltb.main), `${diff > 0 ? '+' : ''}${diff}%`])),
+        table: pace.length && tableHTML(['Game', 'Me', 'HLTB main', 'Diff'], pace.map(({ g, diff }) => [g.title, fmtH(g.hoursPlayed), fmtH(g.hltb.main), `${diff > 0 ? '+' : ''}${diff}%`])),
       })}
     </div>
 
@@ -705,11 +705,11 @@ function renderStats() {
 /* Settings / data */
 function renderData() {
   return `
-    <div class="page-head"><div><h1>Settings</h1><p>Profile, theme and your data.</p></div></div>
+    <div class="page-head"><div><h1>Settings</h1><p>Profile, theme and my data.</p></div></div>
     <div class="settings-grid">
       <section class="card">
         <h2>Profile</h2>
-        <p>Used for your vault’s title and the avatar.</p>
+        <p>Used for the vault’s title and the avatar.</p>
         <div class="field"><label for="profileName">Name</label>
           <input class="input" id="profileName" maxlength="30" value="${esc(state.profile.name)}"></div>
         <div class="field" style="margin-top:14px"><span class="label">Theme</span>
@@ -722,12 +722,12 @@ function renderData() {
 
       <section class="card">
         <h2>Backup &amp; publish</h2>
-        <p>Your games are saved in this browser. To show them on your GitHub Pages site for everyone:</p>
+        <p>My games are saved in this browser. To show them on my GitHub Pages site for everyone:</p>
         <p id="pubStatus" class="pub-status" hidden></p>
         <ol>
           <li>Click <b>Export</b> to download <code>games.json</code>.</li>
-          <li>Replace <code>data/games.json</code> in your repository with it.</li>
-          <li>Commit &amp; push. Visitors will see your list.</li>
+          <li>Replace <code>data/games.json</code> in the repository with it.</li>
+          <li>Commit &amp; push. Visitors will see my list.</li>
         </ol>
         <div class="btn-row">
           <button class="btn btn-primary" data-action="export">Export games.json</button>
@@ -737,14 +737,14 @@ function renderData() {
 
       <section class="card">
         <h2>Cover art</h2>
-        <p>Box art is looked up on Wikipedia by title. You can always pick a different one, or paste your own image URL, in a game's sheet.</p>
+        <p>Box art is looked up on Wikipedia by title. I can always pick a different one, or paste my own image URL, in a game's sheet.</p>
         <label class="fav-toggle" style="margin-bottom:14px"><input type="checkbox" id="autoCovers" ${state.settings.autoCovers ? 'checked' : ''}> Find covers automatically</label>
         <div class="btn-row"><button class="btn" data-action="fetch-covers">${ICON.search} Find missing covers</button></div>
       </section>
 
       <section class="card">
         <h2>Visitors</h2>
-        <p>Visitors see your published list read-only: no add, edit or delete buttons. Editing is unlocked on <b>this browser</b>. To unlock another browser, open <code>${esc(location.origin + location.pathname)}#edit</code> there.</p>
+        <p>Visitors see my published list read-only: no add, edit or delete buttons. Editing is unlocked on <b>this browser</b>. To unlock another browser, open <code>${esc(location.origin + location.pathname)}#edit</code> there.</p>
         <div class="btn-row"><button class="btn" data-action="lock-edit">Lock editing (view as a visitor)</button></div>
       </section>
 
@@ -814,7 +814,7 @@ function syncSheet() {
     sheet.snapshot = f ? formSnapshot(f) : null;
   } else if (sheet.id) {
     // Back was pressed while the sheet was open.
-    if (isDirty() && !confirm('Discard your changes?')) {
+    if (isDirty() && !confirm('Discard changes?')) {
       const { path, params } = parseHash();
       params.set('game', sheet.id);
       history.pushState(null, '', buildHash(path, params));
@@ -827,7 +827,7 @@ function syncSheet() {
 
 // Close button, Escape, backdrop, swipe, Save, Delete.
 function requestClose({ force = false } = {}) {
-  if (!force && isDirty() && !confirm('Discard your changes?')) return false;
+  if (!force && isDirty() && !confirm('Discard changes?')) return false;
   hideSheet();
   leaveSheetUrl();
   return true;
@@ -869,7 +869,7 @@ function openGameDialog(id, presetStatus) {
     <form method="dialog" id="gameForm" novalidate>
       <div class="sheet-head">
         <span class="row-art" id="dlgArt">${existing ? artHTML(g) : `<div class="gen-art" style="--h:0"><span>+</span></div>`}</span>
-        <div><h2 id="dlgTitle">${existing ? esc(g.title) : 'Add a game'}</h2><p>${existing ? `Added ${fmtDate(g.addedDate)}` : 'Log something you play or want to play'}</p></div>
+        <div><h2 id="dlgTitle">${existing ? esc(g.title) : 'Add a game'}</h2><p>${existing ? `Added ${fmtDate(g.addedDate)}` : 'Log something I play or want to play'}</p></div>
         <button type="button" class="sheet-close" data-action="close-dialog" aria-label="Close">×</button>
       </div>
 
@@ -889,7 +889,7 @@ function openGameDialog(id, presetStatus) {
           </div>
         </div>
 
-        <div class="field"><label for="f-score">Your score</label>
+        <div class="field"><label for="f-score">My score</label>
           <div class="score-field">
             <input type="range" id="f-score" name="score" min="0" max="10" step="0.5" value="${g.score ?? 0}" aria-describedby="scoreOut">
             <output class="score-out ${g.score == null ? 'none' : ''}" id="scoreOut">${g.score == null ? 'Not rated' : fmtScore(g.score)}</output>
@@ -944,7 +944,7 @@ function openGameDialog(id, presetStatus) {
         </div>
 
         <div class="field"><label for="f-review">Review</label>
-          <textarea class="textarea" id="f-review" name="review" placeholder="What did you love? What bugged you? Would you recommend it?">${esc(g.review)}</textarea>
+          <textarea class="textarea" id="f-review" name="review" placeholder="What did I love? What bugged me? Would I recommend it?">${esc(g.review)}</textarea>
         </div>
 
         <label class="fav-toggle"><input type="checkbox" name="favorite" ${g.favorite ? 'checked' : ''}> ${ICON.heart.replace('<svg', '<svg width="18" height="18" style="color:var(--red)"')} Favourite</label>
@@ -1036,7 +1036,7 @@ async function findCoversInDialog(autoPick = false) {
       $('.cover-pick', box).click();
     }
   } catch (e) {
-    box.innerHTML = '<div class="cover-msg">Could not reach Wikipedia. Check your connection or paste an image URL.</div>';
+    box.innerHTML = '<div class="cover-msg">Could not reach Wikipedia. Check the connection or paste an image URL.</div>';
   }
 }
 
@@ -1145,7 +1145,7 @@ const actions = {
     const form = $('#gameForm');
     const custom = $('#f-shours');
     const h = el.dataset.h ? parseFloat(el.dataset.h) : num(custom.value);
-    if (!h) { custom.focus(); toast('Enter how many hours you played'); return; }
+    if (!h) { custom.focus(); toast('Enter how many hours I played'); return; }
     const date = $('#f-sdate').value || today();
     writeSessions(form, normSessions([...readSessions(form), { date, hours: h }]));
     bumpTotal(form, h);
@@ -1244,13 +1244,13 @@ const actions = {
     toast(`Loaded ${state.games.length} games`);
   },
   'demo': () => {
-    if (state.games.length && !confirm('Replace your current games with demo data?')) return;
+    if (state.games.length && !confirm('Replace my current games with demo data?')) return;
     state.games = demoGames().map(normalizeGame);
     save(); render(); autoFillCovers();
     toast('Demo data loaded');
   },
   'wipe': () => {
-    if (!confirm('Erase all games from this browser? Export first if you want a backup.')) return;
+    if (!confirm('Erase all games from this browser? Export first for a backup.')) return;
     state.games = [];
     save(); render();
     toast('All games erased');
@@ -1320,7 +1320,7 @@ $('#importFile').addEventListener('change', async e => {
   try {
     const incoming = normalizeState(JSON.parse(await file.text()));
     if (!incoming.games.length) { toast('No games found in that file'); return; }
-    const merge = state.games.length && confirm(`Found ${incoming.games.length} games.\n\nOK = merge with your current list\nCancel = replace your current list`);
+    const merge = state.games.length && confirm(`Found ${incoming.games.length} games.\n\nOK = merge with my current list\nCancel = replace my current list`);
     if (merge) {
       const map = new Map(state.games.map(g => [g.id, g]));
       incoming.games.forEach(g => { const cur = map.get(g.id); if (!cur || g.updated >= cur.updated) map.set(g.id, g); });
@@ -1383,7 +1383,7 @@ function publishStatus() {
 const PUBLISH_TEXT = {
   published: 'Everything here is published. Visitors see the same list.',
   exported: 'Exported, but not live yet: replace data/games.json with the file, then commit and push.',
-  changed: 'You have changes visitors can’t see yet. Export and push to publish them.',
+  changed: 'I have changes visitors can’t see yet. Export and push to publish them.',
 };
 function updatePublishStatus() {
   const st = publishStatus();
