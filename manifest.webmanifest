@@ -1,0 +1,20 @@
+{
+  "name": "iSwitch · Game Log",
+  "short_name": "iSwitch",
+  "description": "My Nintendo game log: what I'm playing, my backlog, scores, reviews and stats.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ebebeb",
+  "theme_color": "#e60012",
+  "icons": [
+    { "src": "img/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "img/icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "img/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Library", "url": "./#library" },
+    { "name": "Backlog", "url": "./#backlog" },
+    { "name": "Stats", "url": "./#stats" }
+  ]
+}

@@ -35,6 +35,10 @@ const today = () => new Date().toLocaleDateString('sv'); // YYYY-MM-DD, local ti
 const num = v => { const n = parseFloat(v); return Number.isFinite(n) && n >= 0 ? n : null; };
 const sum = arr => arr.reduce((a, b) => a + (b || 0), 0);
 const round1 = n => Math.round(n * 10) / 10;
+const round2 = n => Math.round(n * 100) / 100;
+const isCoarse = () => matchMedia('(pointer: coarse)').matches;
+const isPhone = () => matchMedia('(max-width: 640px)').matches;
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 function fmtH(h) {
   if (!h) return '0h';
@@ -76,6 +80,7 @@ const ICON = {
   search: '<svg viewBox="0 0 24 24"><path d="M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>',
   plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"/></svg>',
   pen: '<svg viewBox="0 0 24 24"><path d="M15.2 4.2 19.8 8.8 8.6 20H4v-4.6zm2-2 1.4-1.4a1 1 0 0 1 1.4 0l3.2 3.2a1 1 0 0 1 0 1.4L21.8 6.8z"/></svg>',
+  share: '<svg viewBox="0 0 24 24"><path d="M12 3l5 5-1.4 1.4L13 6.8V15h-2V6.8L8.4 9.4 7 8zM5 13h2v6h10v-6h2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/></svg>',
   bolt: '<svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>',
 };
 
@@ -118,9 +123,24 @@ function normalizeGame(g) {
     review: g.review || '',
     favorite: !!g.favorite,
     priority: PRIORITIES.includes(g.priority) ? g.priority : 'medium',
+    sessions: normSessions(g.sessions),
     updated: g.updated || Date.now(),
   };
 }
+
+// Play sessions: [{ date: 'YYYY-MM-DD', hours }], one entry per day, oldest first.
+// hoursPlayed stays the game's total (it can include time from before logging started).
+function normSessions(list) {
+  if (!Array.isArray(list)) return [];
+  const byDate = new Map();
+  for (const s of list) {
+    const h = num(s?.hours);
+    if (!h || !/^\d{4}-\d{2}-\d{2}$/.test(s?.date || '')) continue;
+    byDate.set(s.date, round2((byDate.get(s.date) || 0) + h));
+  }
+  return [...byDate].sort(([a], [b]) => a.localeCompare(b)).map(([date, hours]) => ({ date, hours }));
+}
+const lastPlayed = g => g.sessions.at(-1)?.date || '';
 
 function normalizeState(obj) {
   const base = DEFAULT_STATE();
@@ -308,10 +328,11 @@ function renderHome() {
       <div class="hello"><div><h1>${esc(possessive(name))} Personal Vault</h1><p>${esc(name)} hasn’t logged any games yet.</p></div></div>
       <div style="margin-top:18px">${emptyHTML('No games yet', 'Add the games you are playing, finished, or plan to play. Everything is saved in this browser.', true)}</div>`;
   }
-  const playing = byStatus('playing').sort((a, b) => b.updated - a.updated);
+  const playing = byStatus('playing').sort((a, b) => lastPlayed(b).localeCompare(lastPlayed(a)) || b.updated - a.updated);
   const others = games.filter(g => g.status !== 'playing').sort((a, b) => b.updated - a.updated).slice(0, 12);
   const shelf = [...playing, ...others];
-  const reviewed = games.filter(g => g.review.trim()).sort((a, b) => b.updated - a.updated).slice(0, 2);
+  const finished = recentlyFinished();
+  const reviewed = games.filter(g => g.review.trim() && g !== finished[0]).sort((a, b) => b.updated - a.updated).slice(0, 2);
 
   return `
     <div class="hello">
@@ -332,6 +353,10 @@ function renderHome() {
       </div>
     </div>
 
+    ${finished.length ? `
+      <h2 class="section-title">Recently finished</h2>
+      ${spotlightHTML(finished)}` : ''}
+
     <div class="quick-stats">
       <a class="qs" href="#stats"><span class="qs-ico" style="background:var(--red)">${ICON.clock}</span><div><b>${fmtH(totalH)}</b><span>Total play time</span></div></a>
       <a class="qs" href="#library"><span class="qs-ico" style="background:var(--s-completed)">${ICON.trophy}</span><div><b>${byStatus('completed').length}</b><span>Games completed</span></div></a>
@@ -343,6 +368,41 @@ function renderHome() {
       <h2 class="section-title">Latest reviews</h2>
       <div class="reviews">${reviewed.map(reviewCardHTML).join('')}</div>` : ''}
   `;
+}
+
+function recentlyFinished() {
+  return byStatus('completed').sort((a, b) =>
+    (b.finishDate || '').localeCompare(a.finishDate || '') || b.updated - a.updated);
+}
+
+function spotlightHTML([g, ...rest]) {
+  const meta = [
+    g.score != null ? `<span class="spot-score">${fmtScore(g.score)}<small>/10</small></span>` : '',
+    g.hoursPlayed ? `<span class="hltb">${ICON.clock.replace('<svg', '<svg width="12" height="12"')} ${fmtH(g.hoursPlayed)}</span>` : '',
+    g.hltb.main && g.hoursPlayed ? `<span class="hltb">HLTB ${fmtH(g.hltb.main)}</span>` : '',
+  ].join('');
+  return `
+    <div class="spotlight">
+      <article class="spot-main">
+        <button class="spot-art" data-art="${g.id}" data-action="open-game" data-id="${g.id}" aria-label="Open ${esc(g.title)}">${artHTML(g)}</button>
+        <div class="spot-body">
+          <span class="spot-kicker">${ICON.trophy} ${g.finishDate ? `Finished ${fmtDate(g.finishDate)}` : 'Completed'}</span>
+          <h3>${esc(g.title)}</h3>
+          ${g.score != null ? stars(g.score) : ''}
+          <div class="row-sub">${meta}</div>
+          ${g.review ? `<blockquote>${esc(g.review)}</blockquote>` : ''}
+          <div><button class="btn btn-sm" data-action="open-game" data-id="${g.id}">${g.review ? 'Read the review' : 'See details'}</button></div>
+        </div>
+      </article>
+      ${rest.length ? `
+        <ol class="spot-list" aria-label="Also finished">
+          ${rest.slice(0, 4).map(x => `
+            <li><button class="spot-item" data-action="open-game" data-id="${x.id}">
+              <span class="row-art" data-art="${x.id}">${artHTML(x)}</span>
+              <span><b>${esc(x.title)}</b><small>${x.finishDate ? fmtDate(x.finishDate) : 'Completed'}${x.score != null ? ` · ${fmtScore(x.score)}/10` : ''}</small></span>
+            </button></li>`).join('')}
+        </ol>` : ''}
+    </div>`;
 }
 
 function reviewCardHTML(g) {
@@ -358,7 +418,7 @@ function reviewCardHTML(g) {
 }
 
 /* Library */
-const lib = { filter: 'all', q: '', sort: 'updated' };
+const lib = { filter: 'all', q: '', sort: 'updated' }; // mirrored in the URL, see writeLibToHash()
 
 function renderLibrary() {
   const counts = Object.fromEntries(STATUSES.map(s => [s.id, byStatus(s.id).length]));
@@ -463,7 +523,7 @@ function renderBacklog() {
 
     ${playing.length ? `
       <h2 class="section-title">In progress <small>${fmtH(remainingPlaying)} left on main stories</small></h2>
-      <div class="list">${playing.map(g => rowHTML(g, g => `<button class="btn btn-sm owner-only" data-action="open-game" data-id="${g.id}">${ICON.pen} Update</button>`)).join('')}</div>` : ''}
+      <div class="list">${playing.map(g => rowHTML(g, g => `<button class="btn btn-sm owner-only" data-action="quick-log" data-id="${g.id}" aria-label="Log 1 hour of ${esc(g.title)} today">+1h today</button><button class="btn btn-sm owner-only" data-action="open-game" data-id="${g.id}">${ICON.pen} Update</button>`)).join('')}</div>` : ''}
 
     ${onhold.length ? `
       <h2 class="section-title">On hold</h2>
@@ -551,6 +611,22 @@ function renderStats() {
     }
   }
 
+  /* play time per month, from logged sessions (last 12 months) */
+  const allSessions = games.flatMap(g => g.sessions);
+  const monthItems = [];
+  if (allSessions.length) {
+    const perMonth = new Map();
+    allSessions.forEach(s => { const m = s.date.slice(0, 7); perMonth.set(m, (perMonth.get(m) || 0) + s.hours); });
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const v = round2(perMonth.get(key) || 0);
+      const long = d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+      monthItems.push({ label: d.toLocaleDateString(undefined, { month: 'short' }), long, value: v, tip: `${long}: ${fmtH(v)}` });
+    }
+  }
+
   /* pace vs HLTB */
   const pace = completed.filter(g => g.hltb.main && g.hoursPlayed)
     .map(g => ({ g, diff: Math.round(((g.hoursPlayed - g.hltb.main) / g.hltb.main) * 100) }))
@@ -600,6 +676,11 @@ function renderStats() {
         body: scored.length ? vbarsHTML(buckets, v => v) : '<div class="no-data">Rate a game to see this.</div>',
         table: scored.length && tableHTML(['Score', 'Games'], buckets.map(b => [b.label, b.value])),
       })}
+      ${monthItems.length ? chartCard({
+        title: 'Play time per month', sub: 'Logged play sessions, last 12 months', wide: true,
+        body: vbarsHTML(monthItems, v => (v ? fmtH(v) : '')),
+        table: tableHTML(['Month', 'Hours'], monthItems.map(m => [m.long, round1(m.value)])),
+      }) : ''}
       ${chartCard({
         title: 'Games beaten per year', sub: 'Based on finish date', wide: true,
         body: yearItems.length ? vbarsHTML(yearItems, v => v) : '<div class="no-data">Add a finish date to completed games to see this.</div>',
@@ -642,6 +723,7 @@ function renderData() {
       <section class="card">
         <h2>Backup &amp; publish</h2>
         <p>Your games are saved in this browser. To show them on your GitHub Pages site for everyone:</p>
+        <p id="pubStatus" class="pub-status" hidden></p>
         <ol>
           <li>Click <b>Export</b> to download <code>games.json</code>.</li>
           <li>Replace <code>data/games.json</code> in your repository with it.</li>
@@ -679,8 +761,103 @@ function renderData() {
 }
 
 /* ------------------------------------------------------------------ */
-/* Game dialog                                                         */
+/* Game sheet: opened through the URL (?game=<id>), so Back closes it  */
 /* ------------------------------------------------------------------ */
+// id: what the sheet shows (null = closed). pushed: we added the history entry,
+// so closing goes Back instead of adding another one. snapshot: form state at open.
+const sheet = { id: null, pushed: false, snapshot: null, newStatus: null };
+const formSnapshot = f => new URLSearchParams(new FormData(f)).toString();
+
+function isDirty() {
+  const f = $('#gameForm');
+  return !!(sheet.id && f && sheet.snapshot != null && formSnapshot(f) !== sheet.snapshot);
+}
+
+let backPending = false; // a history.back() from closing hasn't landed yet
+
+function openSheetUrl(id, newStatus = null) {
+  // Opening right after closing: wait for that Back to finish, or it would close this one.
+  if (backPending) { addEventListener('popstate', () => openSheetUrl(id, newStatus), { once: true }); return; }
+  const { path, params } = parseHash();
+  params.set('game', id);
+  sheet.newStatus = newStatus;
+  sheet.pushed = true;
+  location.hash = buildHash(path, params); // hashchange -> syncSheet()
+}
+
+function leaveSheetUrl() {
+  const { path, params } = parseHash();
+  if (!params.has('game')) return;
+  if (sheet.pushed) { sheet.pushed = false; backPending = true; history.back(); return; }
+  params.delete('game');
+  replaceHash(path, params);
+}
+
+// Make the sheet match the URL.
+function syncSheet() {
+  const want = parseHash().params.get('game');
+  if (want) {
+    if (sheet.id === want) return;
+    if (want === 'new') {
+      if (!canEdit) { leaveSheetUrl(); return; }
+      openGameDialog(null, sheet.newStatus);
+    } else if (getGame(want)) {
+      if (canEdit) openGameDialog(want); else openGameView(want);
+    } else {
+      toast('That game isn’t in the list');
+      sheet.pushed = false;
+      leaveSheetUrl();
+      return;
+    }
+    sheet.id = want;
+    const f = $('#gameForm');
+    sheet.snapshot = f ? formSnapshot(f) : null;
+  } else if (sheet.id) {
+    // Back was pressed while the sheet was open.
+    if (isDirty() && !confirm('Discard your changes?')) {
+      const { path, params } = parseHash();
+      params.set('game', sheet.id);
+      history.pushState(null, '', buildHash(path, params));
+      sheet.pushed = true;
+      return;
+    }
+    hideSheet();
+  }
+}
+
+// Close button, Escape, backdrop, swipe, Save, Delete.
+function requestClose({ force = false } = {}) {
+  if (!force && isDirty() && !confirm('Discard your changes?')) return false;
+  hideSheet();
+  leaveSheetUrl();
+  return true;
+}
+
+function showSheet() {
+  const dlg = $('#gameDialog');
+  dlg.classList.remove('closing');
+  dlg.style.transform = '';
+  if (!dlg.open) dlg.showModal();
+  // Focus the sheet itself rather than the × button (no stray focus ring); Tab moves into it.
+  dlg.tabIndex = -1;
+  dlg.focus();
+  $('.sheet-body', dlg)?.scrollTo(0, 0);
+}
+
+function hideSheet() {
+  const dlg = $('#gameDialog');
+  sheet.id = null;
+  sheet.snapshot = null;
+  if (!dlg.open) return;
+  if (!isPhone() || reducedMotion()) { dlg.close(); return; }
+  dlg.classList.add('closing'); // slide down, then close
+  setTimeout(() => {
+    dlg.classList.remove('closing');
+    dlg.style.transform = '';
+    if (!sheet.id) dlg.close();
+  }, 220);
+}
+
 function openGameDialog(id, presetStatus) {
   const existing = id ? getGame(id) : null;
   const g = existing || normalizeGame({ title: '', status: presetStatus || 'playing' });
@@ -720,13 +897,25 @@ function openGameDialog(id, presetStatus) {
           <div id="scoreStars">${stars(g.score)}</div>
         </div>
 
-        <div class="field"><label for="f-hours">Time played (hours)</label>
+        <div class="field"><label for="f-hours">Time played</label>
           <div class="hours-field">
-            <button type="button" class="btn btn-sm" data-action="add-hours" data-h="-0.5">−½</button>
-            <input class="input" type="number" min="0" step="0.25" id="f-hours" name="hoursPlayed" value="${round1(g.hoursPlayed)}">
-            <button type="button" class="btn btn-sm" data-action="add-hours" data-h="0.5">+½h</button>
-            <button type="button" class="btn btn-sm" data-action="add-hours" data-h="1">+1h</button>
-            <button type="button" class="btn btn-sm" data-action="add-hours" data-h="2">+2h</button>
+            <input class="input" type="number" min="0" step="0.25" id="f-hours" name="hoursPlayed" value="${round2(g.hoursPlayed)}">
+            <span class="unit">hours in total</span>
+          </div>
+          <div class="session-log">
+            <span class="sublabel">Log a play session</span>
+            <div class="session-add">
+              <input class="input" type="date" id="f-sdate" value="${today()}" max="${today()}" aria-label="Session date">
+              <button type="button" class="btn btn-sm" data-action="log-session" data-h="0.5">+½h</button>
+              <button type="button" class="btn btn-sm" data-action="log-session" data-h="1">+1h</button>
+              <button type="button" class="btn btn-sm" data-action="log-session" data-h="2">+2h</button>
+              <span class="session-custom">
+                <input class="input" type="number" min="0.25" step="0.25" id="f-shours" placeholder="h" aria-label="Other amount, in hours">
+                <button type="button" class="btn btn-sm" data-action="log-session">Add</button>
+              </span>
+            </div>
+            <input type="hidden" name="sessions" value="${esc(JSON.stringify(g.sessions))}">
+            <ul class="session-list" id="sessionList">${sessionListHTML(g.sessions, true)}</ul>
           </div>
         </div>
 
@@ -795,8 +984,30 @@ function openGameDialog(id, presetStatus) {
   form.elements.cover.addEventListener('change', () => setDialogArt(form.elements.cover.value.trim()));
   form.addEventListener('submit', e => { e.preventDefault(); saveGameFromForm(form); });
 
-  dlg.showModal();
-  if (!existing) setTimeout(() => form.elements.title.focus(), 50);
+  showSheet();
+  // On phones, don't throw the keyboard up before the sheet is even visible.
+  if (!existing && !isCoarse()) setTimeout(() => form.elements.title.focus(), 50);
+}
+
+function sessionListHTML(list, editable = false) {
+  if (!list.length) return editable ? '<li class="session-empty">No sessions logged yet. Each one adds to the total.</li>' : '';
+  const max = Math.max(...list.map(s => s.hours));
+  return [...list].reverse().map(s => `
+    <li>
+      <span class="session-date">${esc(fmtDate(s.date))}</span>
+      <span class="session-bar"><i style="width:${(s.hours / max) * 100}%"></i></span>
+      <b>${fmtH(s.hours)}</b>
+      ${editable ? `<button type="button" class="session-del" data-action="del-session" data-date="${s.date}" aria-label="Remove ${esc(fmtDate(s.date))} session">×</button>` : ''}
+    </li>`).join('');
+}
+const readSessions = form => normSessions(JSON.parse(form.elements.sessions.value || '[]'));
+function writeSessions(form, list) {
+  form.elements.sessions.value = JSON.stringify(list);
+  $('#sessionList').innerHTML = sessionListHTML(list, true);
+}
+function bumpTotal(form, h) {
+  const inp = form.elements.hoursPlayed;
+  inp.value = round2(Math.max(0, (parseFloat(inp.value) || 0) + h));
 }
 
 function setDialogArt(src) {
@@ -849,6 +1060,7 @@ function openGameView(id) {
           ${g.status === 'playing' && pct ? info('Progress', `${pct}%`) : ''}
           ${g.startDate ? info('Started', fmtDate(g.startDate)) : ''}
           ${g.finishDate ? info('Finished', fmtDate(g.finishDate)) : ''}
+          ${lastPlayed(g) && g.status !== 'completed' ? info('Last played', fmtDate(lastPlayed(g))) : ''}
         </div>
         ${g.score != null ? stars(g.score) : ''}
         ${g.hltb.main || g.hltb.extra || g.hltb.complete ? `
@@ -860,12 +1072,17 @@ function openGameView(id) {
             </div>
           </div>` : ''}
         ${g.review ? `<div class="field"><span class="label">Review</span><p class="review-full">${esc(g.review)}</p></div>` : ''}
+        ${g.sessions.length ? `
+          <div class="field"><span class="label">Play sessions <small>${g.sessions.length} logged</small></span>
+            <ul class="session-list">${sessionListHTML(g.sessions.slice(-10))}</ul>
+          </div>` : ''}
       </div>
       <div class="sheet-foot">
+        <button type="button" class="btn btn-sm" data-action="share-game" data-id="${g.id}">${ICON.share} Share</button>
         <div class="right"><button type="button" class="btn" data-action="close-dialog"><span class="face"><b>B</b></span> Close</button></div>
       </div>
     </form>`;
-  dlg.showModal();
+  showSheet();
 }
 
 function saveGameFromForm(form) {
@@ -881,6 +1098,7 @@ function saveGameFromForm(form) {
     priority: form.elements.priority.value,
     score: parseFloat(form.elements.score.value) || null,
     hoursPlayed: num(form.elements.hoursPlayed.value) ?? 0,
+    sessions: readSessions(form),
     hltb: { main: num(form.elements.hltbMain.value), extra: num(form.elements.hltbExtra.value), complete: num(form.elements.hltbComplete.value) },
     startDate: form.elements.startDate.value,
     finishDate: form.elements.finishDate.value,
@@ -894,7 +1112,7 @@ function saveGameFromForm(form) {
   });
   if (prev) Object.assign(prev, data); else state.games.push(data);
   save();
-  $('#gameDialog').close();
+  requestClose({ force: true });
   toast(prev ? 'Saved!' : `${title} added!`);
   render();
   autoFillCovers();
@@ -914,25 +1132,55 @@ function download(filename, text) {
 
 const actions = {
   'go': el => { location.hash = el.dataset.route; },
-  'new-game': el => openGameDialog(null, el.dataset.status),
-  'open-game': el => (canEdit ? openGameDialog(el.dataset.id) : openGameView(el.dataset.id)),
+  'new-game': el => openSheetUrl('new', el.dataset.status || null),
+  'open-game': el => openSheetUrl(el.dataset.id),
   'lock-edit': () => {
     if (!confirm('Lock editing on this browser?\n\nYour games stay saved here. Open #edit to unlock again.')) return;
     try { localStorage.removeItem(EDIT_KEY); } catch (e) {}
     location.replace('#home');
     location.reload();
   },
-  'close-dialog': () => $('#gameDialog').close(),
-  'add-hours': el => {
-    const inp = $('#f-hours');
-    inp.value = round1(Math.max(0, (parseFloat(inp.value) || 0) + parseFloat(el.dataset.h)));
+  'close-dialog': () => requestClose(),
+  'log-session': el => {
+    const form = $('#gameForm');
+    const custom = $('#f-shours');
+    const h = el.dataset.h ? parseFloat(el.dataset.h) : num(custom.value);
+    if (!h) { custom.focus(); toast('Enter how many hours you played'); return; }
+    const date = $('#f-sdate').value || today();
+    writeSessions(form, normSessions([...readSessions(form), { date, hours: h }]));
+    bumpTotal(form, h);
+    custom.value = '';
+    const start = form.elements.startDate;
+    if (!start.value || date < start.value) start.value = date;
+    // Logging time on a backlog game means you've started it.
+    if (form.elements.status.value === 'backlog') {
+      $('#st-playing').checked = true;
+      $('#st-playing').dispatchEvent(new Event('change', { bubbles: true }));
+    }
+  },
+  'del-session': el => {
+    const form = $('#gameForm');
+    const list = readSessions(form);
+    const s = list.find(x => x.date === el.dataset.date);
+    if (!s) return;
+    writeSessions(form, list.filter(x => x !== s));
+    bumpTotal(form, -s.hours);
+  },
+  'quick-log': el => {
+    const g = getGame(el.dataset.id);
+    if (!g) return;
+    g.sessions = normSessions([...g.sessions, { date: today(), hours: 1 }]);
+    g.hoursPlayed = round2(g.hoursPlayed + 1);
+    g.updated = Date.now();
+    save(); render();
+    toast(`Logged 1h of ${g.title} today`);
   },
   'delete-game': el => {
     const g = getGame(el.dataset.id);
     if (!g || !confirm(`Delete "${g.title}"? This can't be undone.`)) return;
     state.games = state.games.filter(x => x.id !== g.id);
     save();
-    $('#gameDialog').close();
+    requestClose({ force: true });
     toast('Game deleted');
     render();
   },
@@ -950,7 +1198,18 @@ const actions = {
     const found = await autoFillCovers(true);
     toast(`Found ${found} of ${missing.length} cover${missing.length > 1 ? 's' : ''}`);
   },
-  'lib-filter': el => { lib.filter = el.dataset.status; render(); },
+  'share-game': async el => {
+    const g = getGame(el.dataset.id);
+    if (!g) return;
+    const url = `${location.origin}${location.pathname}#home?game=${encodeURIComponent(g.id)}`;
+    if (navigator.share && isCoarse()) {
+      try { await navigator.share({ title: g.title, text: `${g.title} on my game log`, url }); } catch (e) { /* cancelled */ }
+      return;
+    }
+    try { await navigator.clipboard.writeText(url); toast('Link copied'); }
+    catch (e) { prompt('Copy this link:', url); }
+  },
+  'lib-filter': el => { lib.filter = el.dataset.status; writeLibToHash(); render(); },
   'cycle-prio': el => {
     const g = getGame(el.dataset.id);
     g.priority = PRIORITIES[(PRIORITIES.indexOf(g.priority) + 1) % PRIORITIES.length];
@@ -972,6 +1231,8 @@ const actions = {
   },
   'export': () => {
     download('games.json', JSON.stringify({ ...state, exported: new Date().toISOString() }, null, 2));
+    try { localStorage.setItem(EXPORT_KEY, fingerprint(state)); } catch (e) {}
+    updatePublishStatus();
     toast('Exported games.json');
   },
   'import': () => $('#importFile').click(),
@@ -996,7 +1257,7 @@ const actions = {
   },
 };
 
-const VISITOR_ACTIONS = new Set(['go', 'open-game', 'close-dialog', 'lib-filter', 'theme']);
+const VISITOR_ACTIONS = new Set(['go', 'open-game', 'close-dialog', 'lib-filter', 'theme', 'share-game']);
 
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-action]');
@@ -1007,15 +1268,46 @@ document.addEventListener('click', e => {
   }
 });
 
-// Click on the dim backdrop closes the dialog.
-$('#gameDialog').addEventListener('click', e => { if (e.target.id === 'gameDialog') e.target.close(); });
+// Backdrop click and Escape go through requestClose(), so unsaved edits get a warning.
+$('#gameDialog').addEventListener('click', e => { if (e.target.id === 'gameDialog') requestClose(); });
+$('#gameDialog').addEventListener('cancel', e => { e.preventDefault(); requestClose(); });
+// Safety net: if the browser closes the dialog by itself, keep the URL in step.
+$('#gameDialog').addEventListener('close', () => { if (sheet.id) { sheet.id = null; leaveSheetUrl(); } });
+
+// Phones: drag the sheet down by its header to close it.
+(function swipeToClose() {
+  const dlg = $('#gameDialog');
+  let drag = null;
+  dlg.addEventListener('pointerdown', e => {
+    if (e.pointerType === 'mouse' || !isPhone() || !e.target.closest('.sheet-head') || e.target.closest('button, a, input')) return;
+    drag = { id: e.pointerId, y: e.clientY, t: performance.now(), dy: 0 };
+    e.target.closest('.sheet-head').setPointerCapture(e.pointerId);
+  });
+  dlg.addEventListener('pointermove', e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    drag.dy = Math.max(0, e.clientY - drag.y);
+    dlg.style.transition = 'none';
+    dlg.style.transform = `translateY(${drag.dy}px)`;
+  });
+  const end = e => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const { dy, t } = drag;
+    drag = null;
+    dlg.style.transition = '';
+    const flick = dy > 40 && dy / (performance.now() - t) > 0.5;
+    if ((dy > 120 || flick) && requestClose()) return;
+    dlg.style.transform = ''; // snap back
+  };
+  dlg.addEventListener('pointerup', end);
+  dlg.addEventListener('pointercancel', end);
+})();
 
 document.addEventListener('input', e => {
-  if (e.target.id === 'libSearch') { lib.q = e.target.value; $('#libGrid').innerHTML = libraryGridHTML(); }
+  if (e.target.id === 'libSearch') { lib.q = e.target.value; writeLibToHash(); lastPageKey = pageKey('library'); $('#libGrid').innerHTML = libraryGridHTML(); }
   if (e.target.id === 'profileName') { state.profile.name = e.target.value.trim() || 'Player'; save(); }
 });
 document.addEventListener('change', e => {
-  if (e.target.id === 'libSort') { lib.sort = e.target.value; $('#libGrid').innerHTML = libraryGridHTML(); }
+  if (e.target.id === 'libSort') { lib.sort = e.target.value; writeLibToHash(); lastPageKey = pageKey('library'); $('#libGrid').innerHTML = libraryGridHTML(); }
   if (e.target.id === 'perWeek') { state.settings.hoursPerWeek = Math.max(1, num(e.target.value) || 7); save(); render(); }
   if (e.target.name === 'theme' && e.target.closest('.settings-grid')) setTheme(e.target.value);
   if (e.target.id === 'autoCovers') { state.settings.autoCovers = e.target.checked; save(); if (e.target.checked) autoFillCovers(); }
@@ -1061,7 +1353,47 @@ function setTheme(t) {
   try { localStorage.setItem(THEME_KEY, t); } catch (e) {}
   applyTheme();
   save();
-  if (location.hash === '#data') render();
+  if (currentRoute() === 'data') render();
+}
+
+/* Unpublished changes: compare this browser's list with data/games.json */
+let publishedFp = null; // fingerprint of the published list (null = unknown)
+const EXPORT_KEY = 'iswitch.exported';
+function fingerprint(st) {
+  const games = [...st.games].sort((a, b) => (a.id < b.id ? -1 : 1)).map(({ coverTried, ...g }) => g);
+  const str = JSON.stringify({ name: st.profile.name, games });
+  let h = 0; // small string hash (FNV-1a)
+  for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
+  return `${str.length}-${(h >>> 0).toString(36)}`;
+}
+async function checkPublished() {
+  if (!canEdit) return;
+  const pub = await fetchPublished();
+  publishedFp = pub ? fingerprint(pub) : null;
+  updatePublishStatus();
+}
+function publishStatus() {
+  if (!canEdit || !publishedFp) return null;
+  const fp = fingerprint(state);
+  if (fp === publishedFp) return 'published';
+  let exported = null;
+  try { exported = localStorage.getItem(EXPORT_KEY); } catch (e) {}
+  return fp === exported ? 'exported' : 'changed';
+}
+const PUBLISH_TEXT = {
+  published: 'Everything here is published. Visitors see the same list.',
+  exported: 'Exported, but not live yet: replace data/games.json with the file, then commit and push.',
+  changed: 'You have changes visitors can’t see yet. Export and push to publish them.',
+};
+function updatePublishStatus() {
+  const st = publishStatus();
+  const badge = $('#pubBadge');
+  badge.hidden = !st || st === 'published';
+  badge.className = `pub-badge owner-only ${st || ''}`;
+  badge.textContent = st === 'exported' ? 'Push to publish' : 'Unpublished';
+  badge.title = st ? PUBLISH_TEXT[st] : '';
+  const line = $('#pubStatus');
+  if (line) { line.hidden = !st; line.className = `pub-status ${st || ''}`; line.textContent = st ? PUBLISH_TEXT[st] : ''; }
 }
 
 function updateChrome() {
@@ -1071,6 +1403,7 @@ function updateChrome() {
   $('#batteryFill').style.width = `${pct}%`;
   $('#batteryPct').textContent = `${pct}%`;
   $('#battery').dataset.tip = `Completion rate: ${pct}% of started games beaten`;
+  updatePublishStatus();
 }
 
 function tick() {
@@ -1088,13 +1421,30 @@ function showTip(el, x, y) {
   tip.style.left = `${Math.max(8, left)}px`;
   tip.style.top = `${Math.max(8, top)}px`;
 }
+// Mouse: the tooltip follows the pointer. Touch: tapping shows it for a moment,
+// and the next tap anywhere hides it (it never gets stuck on screen).
+let tipTimer;
+const tipAt = el => { const r = el.getBoundingClientRect(); showTip(el, r.left + r.width / 2, r.bottom); };
 document.addEventListener('pointermove', e => {
+  if (e.pointerType !== 'mouse') return;
   const el = e.target.closest?.('[data-tip]');
   if (el) showTip(el, e.clientX, e.clientY); else tip.hidden = true;
 });
+document.addEventListener('pointerdown', e => {
+  if (e.pointerType === 'mouse') return;
+  clearTimeout(tipTimer);
+  tip.hidden = true;
+});
+document.addEventListener('click', e => {
+  if (!isCoarse()) return;
+  const el = e.target.closest?.('[data-tip]');
+  if (!el || el.closest('[data-action]')) return; // taps that open something don't need a tooltip
+  tipAt(el);
+  tipTimer = setTimeout(() => { tip.hidden = true; }, 2500);
+});
 document.addEventListener('focusin', e => {
   const el = e.target.closest?.('[data-tip]');
-  if (el) { const r = el.getBoundingClientRect(); showTip(el, r.left + r.width / 2, r.bottom); }
+  if (el && el.matches(':focus-visible')) tipAt(el); // keyboard focus only, not taps
 });
 document.addEventListener('focusout', () => { tip.hidden = true; });
 addEventListener('scroll', () => { tip.hidden = true; }, { passive: true });
@@ -1104,14 +1454,54 @@ addEventListener('scroll', () => { tip.hidden = true; }, { passive: true });
 /* ------------------------------------------------------------------ */
 const routes = { home: renderHome, library: renderLibrary, backlog: renderBacklog, stats: renderStats, data: renderData };
 
+// Everything lives in the hash, so links can be shared and Back works:
+//   #library?status=completed&sort=score&q=zelda   (library filters)
+//   #home?game=<id>                                (a game's sheet open on top of a page)
+function parseHash(h = location.hash) {
+  const str = h.replace(/^#/, '');
+  const i = str.indexOf('?');
+  return { path: i < 0 ? str : str.slice(0, i), params: new URLSearchParams(i < 0 ? '' : str.slice(i + 1)) };
+}
+function buildHash(path, params) {
+  const q = params.toString();
+  return `#${path || 'home'}${q ? `?${q}` : ''}`;
+}
+function replaceHash(path, params) {
+  const h = buildHash(path, params);
+  if (h !== location.hash) history.replaceState(history.state, '', h);
+}
+
 function currentRoute() {
-  const r = location.hash.replace('#', '');
+  const r = parseHash().path;
   if (r === 'data' && !canEdit) return 'home';
   return routes[r] ? r : 'home';
 }
 
+/* Library filters <-> URL. Params in the URL win; a bare #library keeps the last filters. */
+const LIB_DEFAULTS = { filter: 'all', q: '', sort: 'updated' };
+function readLibFromHash() {
+  const p = parseHash().params;
+  if (!['status', 'sort', 'q'].some(k => p.has(k))) return;
+  lib.filter = p.get('status') || LIB_DEFAULTS.filter;
+  lib.sort = p.get('sort') || LIB_DEFAULTS.sort;
+  lib.q = p.get('q') || '';
+}
+function writeLibToHash() {
+  const { params } = parseHash();
+  const set = (k, v, def) => (v && v !== def ? params.set(k, v) : params.delete(k));
+  set('status', lib.filter, LIB_DEFAULTS.filter);
+  set('sort', lib.sort, LIB_DEFAULTS.sort);
+  set('q', lib.q.trim(), '');
+  replaceHash('library', params);
+}
+
+let lastPageKey = '';
+const pageKey = r => (r === 'library' ? `library|${lib.filter}|${lib.sort}|${lib.q}` : r);
+
 function render() {
   const r = currentRoute();
+  if (r === 'library') { readLibFromHash(); writeLibToHash(); }
+  lastPageKey = pageKey(r);
   $('#view').innerHTML = routes[r]();
   $$('.dock-btn[data-route]').forEach(b => {
     b.classList.toggle('active', b.dataset.route === r);
@@ -1121,9 +1511,17 @@ function render() {
   updateChrome();
 }
 
+addEventListener('popstate', () => { backPending = false; });
 addEventListener('hashchange', () => {
   if (location.hash === '#edit') { if (!canEdit) { location.reload(); return; } location.replace('#home'); return; }
-  render(); scrollTo({ top: 0 });
+  const r = currentRoute();
+  const prevRoute = lastPageKey.split('|')[0];
+  if (r === 'library') readLibFromHash();
+  if (pageKey(r) !== lastPageKey) {
+    render();
+    if (r !== prevRoute) scrollTo({ top: 0 });
+  }
+  syncSheet();
 });
 
 // Keyboard shortcuts: N = new game, 1–5 = sections
@@ -1132,7 +1530,7 @@ document.addEventListener('keydown', e => {
   if ($('#gameDialog').open) return;
   const map = { '1': 'home', '2': 'library', '3': 'backlog', '4': 'stats', '5': 'data' };
   if (!canEdit) delete map['5'];
-  if ((e.key === 'n' || e.key === '+') && canEdit) { e.preventDefault(); openGameDialog(); }
+  if ((e.key === 'n' || e.key === '+') && canEdit) { e.preventDefault(); openSheetUrl('new'); }
   else if (map[e.key]) location.hash = map[e.key];
 });
 
@@ -1180,6 +1578,11 @@ function demoGames() {
   tick();
   setInterval(tick, 15000);
   render();
+  syncSheet(); // a shared link like #home?game=<id> opens that game
   autoFillCovers();
   if (unlocked) toast('Editing unlocked on this browser');
+  checkPublished();
+  // A push may have gone live since: check again when coming back to the tab.
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') checkPublished(); });
+  if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
