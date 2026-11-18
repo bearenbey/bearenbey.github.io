@@ -6,15 +6,15 @@ dependencies — just HTML, CSS and JavaScript, ready for GitHub Pages.
 
 ## Features
 
-- **Home**: your Personal Vault — a Switch-style shelf with what you're playing and recent games
+- **Home**: my Personal Vault — a Switch-style shelf with what I'm playing and recent games
 - **Library**: search, filter by status / favourites, sort by score, hours, etc.
 - **Backlog**: priorities, total HLTB hours left and an estimated "time until it's all beaten"
 - **Stats**: totals, average score, status split, most played, score distribution
-  games beaten per year and your pace vs. HowLongToBeat
+  games beaten per year and my pace vs. HowLongToBeat
 - **Game sheet**: status, score (0–10 in half steps), time played with quick +½h / +1h / +2h buttons,
   HLTB main / extras / completionist times, dates, cover, favourite and a written review
 - **Cover art, automatically**: box art is looked up on Wikipedia by title (no API key needed).
-  New games get a cover as soon as you type the title; the game sheet's **Find cover** shows
+  New games get a cover as soon as the title is typed; the game sheet's **Find cover** shows
   alternatives to choose from, or paste any image URL. **Settings → Find missing covers** fills in the rest.
 - Light (“Basic White”) and dark (“Basic Black”) themes
 - Keyboard: `N` add game, `1`–`5` switch sections

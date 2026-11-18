@@ -80,6 +80,8 @@ const ICON = {
   search: '<svg viewBox="0 0 24 24"><path d="M10 3a7 7 0 0 1 5.6 11.2l5.1 5.1-1.4 1.4-5.1-5.1A7 7 0 1 1 10 3zm0 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10z"/></svg>',
   plus: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="3" stroke-linecap="round" fill="none"/></svg>',
   pen: '<svg viewBox="0 0 24 24"><path d="M15.2 4.2 19.8 8.8 8.6 20H4v-4.6zm2-2 1.4-1.4a1 1 0 0 1 1.4 0l3.2 3.2a1 1 0 0 1 0 1.4L21.8 6.8z"/></svg>',
+  mail: '<svg viewBox="0 0 24 24"><path d="M4 5h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2zm0 3.2V17h16V8.2l-8 5zM5.6 7 12 11l6.4-4z"/></svg>',
+  link: '<svg viewBox="0 0 24 24"><path d="M10.6 13.4a1 1 0 0 1 0-1.4l3.5-3.5a1 1 0 1 1 1.4 1.4L12 13.4a1 1 0 0 1-1.4 0zM8.5 20.5a4.6 4.6 0 0 1-3.3-7.9l2.5-2.5 1.4 1.4-2.5 2.5a2.6 2.6 0 0 0 3.7 3.7l2.5-2.5 1.4 1.4-2.5 2.5a4.6 4.6 0 0 1-3.2 1.4zm8.2-6.6-1.4-1.4 2.5-2.5a2.6 2.6 0 0 0-3.7-3.7l-2.5 2.5-1.4-1.4 2.5-2.5a4.6 4.6 0 0 1 6.5 6.5z"/></svg>',
   share: '<svg viewBox="0 0 24 24"><path d="M12 3l5 5-1.4 1.4L13 6.8V15h-2V6.8L8.4 9.4 7 8zM5 13h2v6h10v-6h2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"/></svg>',
   bolt: '<svg viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>',
 };
@@ -100,7 +102,7 @@ const possessive = name => (/s$/i.test(name) ? `${name}’` : `${name}’s`);
 
 const DEFAULT_STATE = () => ({
   version: 1,
-  profile: { name: 'Player' },
+  profile: { name: 'Player', nintendo: '', email: '', links: [] },
   settings: { theme: 'auto', hoursPerWeek: 7, autoCovers: true },
   games: [],
 });
@@ -128,6 +130,31 @@ function normalizeGame(g) {
   };
 }
 
+// Profile: empty fields are simply not shown in the profile sheet.
+function normProfile(p) {
+  p = p && typeof p === 'object' ? p : {};
+  const str = (v, max) => String(v ?? '').trim().slice(0, max);
+  return {
+    name: str(p.name, 30) || 'Player',
+    nintendo: str(p.nintendo, 40),
+    email: str(p.email, 120),
+    links: (Array.isArray(p.links) ? p.links : [])
+      .filter(l => l && typeof l === 'object')
+      .map(l => ({ label: str(l.label, 40), url: str(l.url, 300) }))
+      .slice(0, 8),
+  };
+}
+// Only http(s) links are shown; "example.com" becomes "https://example.com".
+function safeUrl(u) {
+  if (!u) return '';
+  try {
+    const url = new URL(/^[a-z][a-z0-9+.-]*:/i.test(u) ? u : `https://${u}`);
+    return /^https?:$/.test(url.protocol) ? url.href : '';
+  } catch (e) { return ''; }
+}
+const hostLabel = href => { try { return new URL(href).hostname.replace(/^www\./, ''); } catch (e) { return href; } };
+const prettyUrl = href => { try { const u = new URL(href); return (u.hostname.replace(/^www\./, '') + u.pathname + u.search).replace(/\/$/, ''); } catch (e) { return href; } };
+
 // Play sessions: [{ date: 'YYYY-MM-DD', hours }], one entry per day, oldest first.
 // hoursPlayed stays the game's total (it can include time from before logging started).
 function normSessions(list) {
@@ -148,7 +175,7 @@ function normalizeState(obj) {
   if (!obj || typeof obj !== 'object') return base;
   return {
     version: 1,
-    profile: { ...base.profile, ...(obj.profile || {}) },
+    profile: normProfile(obj.profile),
     settings: { ...base.settings, ...(obj.settings || {}) },
     games: Array.isArray(obj.games) ? obj.games.map(normalizeGame) : [],
   };
@@ -642,7 +669,7 @@ function renderStats() {
       </div>`;
     }).join('')}</div>
     <div class="daxis"><span></span><div><span>◀ faster</span><span>HLTB</span><span>longer ▶</span></div><span></span></div>`
-    : `<div class="no-data">Complete a game that has an HLTB main time to see my pace.</div>`;
+    : `<div class="no-data">Shows up once I finish a game that has an HLTB main time.</div>`;
 
   /* fun facts */
   const longest = top[0];
@@ -668,12 +695,12 @@ function renderStats() {
       })}
       ${chartCard({
         title: 'Most played', sub: 'Hours per game, top 10',
-        body: top.length ? hbarsHTML(top.map(g => ({ label: g.title, value: g.hoursPlayed })), fmtH) : '<div class="no-data">Log some play time to see this.</div>',
+        body: top.length ? hbarsHTML(top.map(g => ({ label: g.title, value: g.hoursPlayed })), fmtH) : '<div class="no-data">Shows up once I log some play time.</div>',
         table: top.length && tableHTML(['Game', 'Hours'], top.map(g => [g.title, round1(g.hoursPlayed)])),
       })}
       ${chartCard({
         title: 'Score distribution', sub: scored.length ? `${scored.length} rated games, average ${avgScore.toFixed(1)}` : 'No rated games yet',
-        body: scored.length ? vbarsHTML(buckets, v => v) : '<div class="no-data">Rate a game to see this.</div>',
+        body: scored.length ? vbarsHTML(buckets, v => v) : '<div class="no-data">Shows up once I rate a game.</div>',
         table: scored.length && tableHTML(['Score', 'Games'], buckets.map(b => [b.label, b.value])),
       })}
       ${monthItems.length ? chartCard({
@@ -683,7 +710,7 @@ function renderStats() {
       }) : ''}
       ${chartCard({
         title: 'Games beaten per year', sub: 'Based on finish date', wide: true,
-        body: yearItems.length ? vbarsHTML(yearItems, v => v) : '<div class="no-data">Add a finish date to completed games to see this.</div>',
+        body: yearItems.length ? vbarsHTML(yearItems, v => v) : '<div class="no-data">Shows up once my completed games have finish dates.</div>',
         table: yearItems.length && tableHTML(['Year', 'Games'], yearItems.map(y => [y.label, y.value])),
       })}
       ${chartCard({
@@ -709,9 +736,24 @@ function renderData() {
     <div class="settings-grid">
       <section class="card">
         <h2>Profile</h2>
-        <p>Used for the vault’s title and the avatar.</p>
+        <p>Shown when someone taps the avatar. Leave anything empty to hide it. Everything here is public once published.</p>
         <div class="field"><label for="profileName">Name</label>
           <input class="input" id="profileName" maxlength="30" value="${esc(state.profile.name)}"></div>
+        <div class="field" style="margin-top:14px"><label for="profileNintendo">Nintendo username or friend code</label>
+          <input class="input" id="profileNintendo" maxlength="40" placeholder="e.g. SW-1234-5678-9012" value="${esc(state.profile.nintendo)}" autocomplete="off"></div>
+        <div class="field" style="margin-top:14px"><label for="profileEmail">Email</label>
+          <input class="input" type="email" id="profileEmail" maxlength="120" placeholder="Optional" value="${esc(state.profile.email)}"></div>
+        <div class="field" style="margin-top:14px"><span class="label">Links</span>
+          <div class="link-rows">
+            ${state.profile.links.map((l, i) => `
+              <div class="link-row">
+                <input class="input" data-link="${i}" data-field="label" maxlength="40" placeholder="Label" value="${esc(l.label)}" aria-label="Link ${i + 1} label">
+                <input class="input" data-link="${i}" data-field="url" maxlength="300" placeholder="https://…" value="${esc(l.url)}" aria-label="Link ${i + 1} address" inputmode="url" autocomplete="off">
+                <button type="button" class="session-del" data-action="del-link" data-i="${i}" aria-label="Remove link ${i + 1}">×</button>
+              </div>`).join('')}
+          </div>
+          ${state.profile.links.length < 8 ? `<div><button type="button" class="btn btn-sm" data-action="add-link">${ICON.plus} Add link</button></div>` : ''}
+        </div>
         <div class="field" style="margin-top:14px"><span class="label">Theme</span>
           <div class="seg" role="radiogroup" aria-label="Theme">
             ${[['auto', 'Auto'], ['light', 'Basic White'], ['dark', 'Basic Black']].map(([v, l]) => `
@@ -775,11 +817,19 @@ function isDirty() {
 
 let backPending = false; // a history.back() from closing hasn't landed yet
 
+// The open sheet lives in the URL: ?game=<id>, ?game=new, or ?profile
+const sheetKey = p => (p.has('profile') ? 'profile' : p.get('game'));
+function setSheetParam(params, key) {
+  params.delete('game');
+  params.delete('profile');
+  if (key === 'profile') params.set('profile', ''); else if (key) params.set('game', key);
+}
+
 function openSheetUrl(id, newStatus = null) {
   // Opening right after closing: wait for that Back to finish, or it would close this one.
   if (backPending) { addEventListener('popstate', () => openSheetUrl(id, newStatus), { once: true }); return; }
   const { path, params } = parseHash();
-  params.set('game', id);
+  setSheetParam(params, id);
   sheet.newStatus = newStatus;
   sheet.pushed = true;
   location.hash = buildHash(path, params); // hashchange -> syncSheet()
@@ -787,18 +837,20 @@ function openSheetUrl(id, newStatus = null) {
 
 function leaveSheetUrl() {
   const { path, params } = parseHash();
-  if (!params.has('game')) return;
+  if (!sheetKey(params)) return;
   if (sheet.pushed) { sheet.pushed = false; backPending = true; history.back(); return; }
-  params.delete('game');
+  setSheetParam(params, null);
   replaceHash(path, params);
 }
 
 // Make the sheet match the URL.
 function syncSheet() {
-  const want = parseHash().params.get('game');
+  const want = sheetKey(parseHash().params);
   if (want) {
     if (sheet.id === want) return;
-    if (want === 'new') {
+    if (want === 'profile') {
+      openProfileView();
+    } else if (want === 'new') {
       if (!canEdit) { leaveSheetUrl(); return; }
       openGameDialog(null, sheet.newStatus);
     } else if (getGame(want)) {
@@ -816,7 +868,7 @@ function syncSheet() {
     // Back was pressed while the sheet was open.
     if (isDirty() && !confirm('Discard changes?')) {
       const { path, params } = parseHash();
-      params.set('game', sheet.id);
+      setSheetParam(params, sheet.id);
       history.pushState(null, '', buildHash(path, params));
       sheet.pushed = true;
       return;
@@ -1085,6 +1137,47 @@ function openGameView(id) {
   showSheet();
 }
 
+function openProfileView() {
+  const p = state.profile;
+  const games = state.games;
+  const links = p.links.map(l => ({ ...l, href: safeUrl(l.url) })).filter(l => l.href);
+  const email = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p.email) ? p.email : '';
+  const row = (icon, label, value, extra = '') => `
+    <li class="contact">
+      <span class="contact-ico">${icon}</span>
+      <span class="contact-main"><small>${esc(label)}</small>${value}</span>${extra}
+    </li>`;
+  const contacts = [
+    p.nintendo ? row(ICON.gamepad, 'Nintendo', `<b>${esc(p.nintendo)}</b>`,
+      `<button type="button" class="btn btn-sm" data-action="copy-text" data-text="${esc(p.nintendo)}">Copy</button>`) : '',
+    email ? row(ICON.mail, 'Email', `<a href="mailto:${esc(email)}">${esc(email)}</a>`) : '',
+    ...links.map(l => row(ICON.link, l.label || hostLabel(l.href),
+      `<a href="${esc(l.href)}" target="_blank" rel="noopener me">${esc(prettyUrl(l.href))} ↗</a>`)),
+  ].join('');
+  const completed = byStatus('completed').length;
+  $('#gameDialog').innerHTML = `
+    <form method="dialog">
+      <div class="sheet-head">
+        <span class="profile-avatar" aria-hidden="true">${esc((p.name || 'P')[0].toUpperCase())}</span>
+        <div><h2 id="dlgTitle">${esc(p.name)}</h2><p>${esc(possessive(p.name))} Personal Vault</p></div>
+        <button type="button" class="sheet-close" data-action="close-dialog" aria-label="Close">×</button>
+      </div>
+      <div class="sheet-body">
+        <div class="info-grid profile-stats">
+          <div class="info"><span>Games</span><b>${games.length}</b></div>
+          <div class="info"><span>Completed</span><b>${completed}</b></div>
+          <div class="info"><span>Play time</span><b>${fmtH(sum(games.map(g => g.hoursPlayed)))}</b></div>
+        </div>
+        ${contacts ? `<ul class="contacts">${contacts}</ul>` : ''}
+      </div>
+      <div class="sheet-foot">
+        ${canEdit ? `<button type="button" class="btn btn-sm" data-action="edit-profile">${ICON.pen} Edit profile</button>` : ''}
+        <div class="right"><button type="button" class="btn" data-action="close-dialog"><span class="face"><b>B</b></span> Close</button></div>
+      </div>
+    </form>`;
+  showSheet();
+}
+
 function saveGameFromForm(form) {
   const title = form.elements.title.value.trim();
   if (!title) { form.elements.title.focus(); toast('Please enter a title'); return; }
@@ -1145,14 +1238,14 @@ const actions = {
     const form = $('#gameForm');
     const custom = $('#f-shours');
     const h = el.dataset.h ? parseFloat(el.dataset.h) : num(custom.value);
-    if (!h) { custom.focus(); toast('Enter how many hours I played'); return; }
+    if (!h) { custom.focus(); toast('Enter the number of hours first'); return; }
     const date = $('#f-sdate').value || today();
     writeSessions(form, normSessions([...readSessions(form), { date, hours: h }]));
     bumpTotal(form, h);
     custom.value = '';
     const start = form.elements.startDate;
     if (!start.value || date < start.value) start.value = date;
-    // Logging time on a backlog game means you've started it.
+    // Logging time on a backlog game means it has been started.
     if (form.elements.status.value === 'backlog') {
       $('#st-playing').checked = true;
       $('#st-playing').dispatchEvent(new Event('change', { bubbles: true }));
@@ -1209,6 +1302,26 @@ const actions = {
     try { await navigator.clipboard.writeText(url); toast('Link copied'); }
     catch (e) { prompt('Copy this link:', url); }
   },
+  'profile': () => openSheetUrl('profile'),
+  'edit-profile': () => {
+    // Swap the profile sheet's history entry for Settings, so Back doesn't reopen it.
+    hideSheet();
+    sheet.pushed = false;
+    location.replace(`${location.pathname}${location.search}#data`);
+  },
+  'add-link': () => {
+    state.profile.links.push({ label: '', url: '' });
+    save(); render();
+    $$('.link-row input[data-field="label"]').at(-1)?.focus();
+  },
+  'del-link': el => {
+    state.profile.links.splice(+el.dataset.i, 1);
+    save(); render();
+  },
+  'copy-text': async el => {
+    try { await navigator.clipboard.writeText(el.dataset.text); toast('Copied'); }
+    catch (e) { prompt('Copy this:', el.dataset.text); }
+  },
   'lib-filter': el => { lib.filter = el.dataset.status; writeLibToHash(); render(); },
   'cycle-prio': el => {
     const g = getGame(el.dataset.id);
@@ -1257,7 +1370,7 @@ const actions = {
   },
 };
 
-const VISITOR_ACTIONS = new Set(['go', 'open-game', 'close-dialog', 'lib-filter', 'theme', 'share-game']);
+const VISITOR_ACTIONS = new Set(['go', 'open-game', 'close-dialog', 'lib-filter', 'theme', 'share-game', 'profile', 'copy-text']);
 
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-action]');
@@ -1305,6 +1418,12 @@ $('#gameDialog').addEventListener('close', () => { if (sheet.id) { sheet.id = nu
 document.addEventListener('input', e => {
   if (e.target.id === 'libSearch') { lib.q = e.target.value; writeLibToHash(); lastPageKey = pageKey('library'); $('#libGrid').innerHTML = libraryGridHTML(); }
   if (e.target.id === 'profileName') { state.profile.name = e.target.value.trim() || 'Player'; save(); }
+  if (e.target.id === 'profileNintendo') { state.profile.nintendo = e.target.value.trim(); save(); }
+  if (e.target.id === 'profileEmail') { state.profile.email = e.target.value.trim(); save(); }
+  if (e.target.dataset.link != null) {
+    const l = state.profile.links[+e.target.dataset.link];
+    if (l) { l[e.target.dataset.field] = e.target.value.trim(); save(); }
+  }
 });
 document.addEventListener('change', e => {
   if (e.target.id === 'libSort') { lib.sort = e.target.value; writeLibToHash(); lastPageKey = pageKey('library'); $('#libGrid').innerHTML = libraryGridHTML(); }
@@ -1361,7 +1480,7 @@ let publishedFp = null; // fingerprint of the published list (null = unknown)
 const EXPORT_KEY = 'iswitch.exported';
 function fingerprint(st) {
   const games = [...st.games].sort((a, b) => (a.id < b.id ? -1 : 1)).map(({ coverTried, ...g }) => g);
-  const str = JSON.stringify({ name: st.profile.name, games });
+  const str = JSON.stringify({ profile: st.profile, games });
   let h = 0; // small string hash (FNV-1a)
   for (let i = 0; i < str.length; i++) h = Math.imul(h ^ str.charCodeAt(i), 16777619);
   return `${str.length}-${(h >>> 0).toString(36)}`;
@@ -1568,11 +1687,6 @@ function demoGames() {
     history.replaceState(null, '', `${location.pathname}${location.search}#home`);
   }
   document.body.classList.toggle('readonly', !canEdit);
-  if (!canEdit) {
-    const av = $('.avatar');
-    av.dataset.route = 'home';
-    av.setAttribute('aria-label', 'Home');
-  }
   await load();
   applyTheme();
   tick();

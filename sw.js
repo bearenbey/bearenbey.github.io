@@ -1,6 +1,6 @@
 /* iSwitch service worker: network first, cache as offline fallback.
    Always tries the network, so a push to GitHub shows up on the next load. */
-const CACHE = 'iswitch-v1';
+const CACHE = 'iswitch-v2';
 const SHELL = ['./', 'index.html', 'css/style.css', 'js/app.js', 'data/games.json', 'manifest.webmanifest', 'img/icon-192.png'];
 const SCOPE = new URL('./', self.location).pathname;
 
@@ -22,7 +22,8 @@ self.addEventListener('fetch', e => {
   if (req.method !== 'GET' || url.origin !== self.location.origin || !url.pathname.startsWith(SCOPE)) return;
   e.respondWith((async () => {
     try {
-      const res = await fetch(req);
+      // Revalidate with the server every time (skips the ~10 min browser cache on GitHub Pages).
+      const res = await fetch(req, { cache: 'no-cache' });
       if (res.ok) {
         const copy = res.clone();
         e.waitUntil(caches.open(CACHE).then(c => c.put(url.pathname === SCOPE ? 'index.html' : req, copy)));
