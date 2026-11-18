@@ -1,7 +1,15 @@
 {
   "version": 1,
   "profile": {
-    "name": "bearenbey"
+    "name": "bearenbey",
+    "nintendo": "",
+    "email": "",
+    "links": [
+      {
+        "label": "GitHub",
+        "url": "https://github.com/bearenbey"
+      }
+    ]
   },
   "settings": {
     "theme": "dark",
@@ -274,5 +282,5 @@
       "updated": 1795038035676
     }
   ],
-  "exported": "2026-11-18T21:41:30.591Z"
+  "exported": "2026-11-18T21:52:50.327Z"
 }
