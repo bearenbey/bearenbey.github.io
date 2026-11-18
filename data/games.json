@@ -4,7 +4,7 @@
     "name": "bearenbey"
   },
   "settings": {
-    "theme": "auto",
+    "theme": "dark",
     "hoursPerWeek": 7,
     "autoCovers": true
   },
@@ -14,7 +14,7 @@
       "title": "Shin Megami Tensei V: Vengeance",
       "status": "playing",
       "score": null,
-      "hoursPlayed": 10,
+      "hoursPlayed": 18,
       "hltb": {
         "main": null,
         "extra": null,
@@ -28,7 +28,7 @@
       "review": "",
       "favorite": false,
       "priority": "medium",
-      "updated": 1794948925940
+      "updated": 1795036484564
     },
     {
       "id": "mwl62xslbkat0",
@@ -239,7 +239,28 @@
       "favorite": false,
       "priority": "medium",
       "updated": 1794949396534
+    },
+    {
+      "id": "mwmmeqx22dv7m",
+      "title": "Monster Hunter Stories 3: Twisted Reflection",
+      "status": "backlog",
+      "score": null,
+      "hoursPlayed": 0,
+      "hltb": {
+        "main": null,
+        "extra": null,
+        "complete": null
+      },
+      "startDate": "",
+      "finishDate": "",
+      "addedDate": "2026-11-18",
+      "cover": "https://upload.wikimedia.org/wikipedia/en/6/66/Monster_Hunter_Stories_3_cover_art.jpg?utm_source=en.wikipedia.org&utm_campaign=api&utm_content=thumbnail_unscaled",
+      "coverTried": true,
+      "review": "",
+      "favorite": false,
+      "priority": "medium",
+      "updated": 1795036540358
     }
   ],
-  "exported": "2026-11-17T21:03:39.870Z"
+  "exported": "2026-11-18T21:15:56.640Z"
 }
